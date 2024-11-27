@@ -1,16 +1,12 @@
 // App.js
 import React, { useState, useEffect } from 'react';
 import InstructionInput from './components/InstructionInput';
-import ConfigurationPanel from './components/ConfigurationPanel';
-import RegisterFile from './components/RegisterFile';
-import ReservationStations from './components/ReservationStations';
-import LoadStoreBuffers from './components/LoadStoreBuffers';
-import CacheStatus from './components/CacheStatus';
-import ExecutionStatus from './components/ExecutionStatus';
-import CommonDataBus from './components/CommonDataBus';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import SimulationPage from './components/simulation';
 
 function App() {
   const [instructions, setInstructions] = useState([]);
+  const [everything, setEverything] = useState([]);
   const [config, setConfig] = useState({
     fpAddLatency: 2,
     fpMultLatency: 10,
@@ -54,6 +50,10 @@ function App() {
   useEffect(() => {  
     simulateCycle();
   }, [cycle]);
+
+  useEffect(() => {  
+    console.log(everything);
+  }, [everything]);
   
   const canIssueInstruction = (instruction) => {
     // Check for structural hazards
@@ -73,19 +73,27 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <h1>Tomasulo Algorithm Simulator</h1>
-      <InstructionInput setInstructions={setInstructions} />
-      {/* <ConfigurationPanel config={config} setConfig={setConfig} />
-      <RegisterFile registerFile={registerFile} />
-      <ReservationStations stations={reservationStations} />
-      <LoadStoreBuffers buffers={loadStoreBuffers} />
-      <CacheStatus cacheStatus={cacheStatus} />
-      <ExecutionStatus status={executionStatus} />
-      <CommonDataBus data={commonDataBus} /> */}
-      <button onClick={simulateCycle}>Next Cycle</button>
-      <div>Current Cycle: {cycle}</div>
-    </div>
+    <Router>
+      <div className="App">
+        <h1>Tomasulo Algorithm Simulator</h1>
+        <InstructionInput everything={everything} setEverything={setEverything} />
+        <Link to="/simulation">
+          <button>Open Simulation Page</button>
+        </Link>
+        {/* <ConfigurationPanel config={config} setConfig={setConfig} />
+        <RegisterFile registerFile={registerFile} />
+        <ReservationStations stations={reservationStations} />
+        <LoadStoreBuffers buffers={loadStoreBuffers} />
+        <CacheStatus cacheStatus={cacheStatus} />
+        <ExecutionStatus status={executionStatus} />
+        <CommonDataBus data={commonDataBus} /> */}
+        {/* <button onClick={simulateCycle}>Next Cycle</button>
+        <div>Current Cycle: {cycle}</div> */}
+      </div>
+      <Routes>
+        <Route path="/simulation" element={<SimulationPage everything={everything} />} />
+      </Routes>
+    </Router>
   );
 }
 

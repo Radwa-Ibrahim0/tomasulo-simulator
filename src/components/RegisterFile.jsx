@@ -1,30 +1,43 @@
-// components/RegisterFile.js
-import React from 'react';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "./ui/table"
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
-function RegisterFile({ registerFile }) {
+export default function RegisterFileTable({ title, size, values }) {
+  const registers = Array.from({ length: size }, (_, index) => ({
+    id: `${title[0]}${index}`,
+    qi: values[index] || 0,
+  }));
+
   return (
-    <div>
-      <h2>Register File</h2>
-      <table>
-        <thead>
-          <tr>
-            <th>Register</th>
-            <th>Value</th>
-            <th>Qi</th>
-          </tr>
-        </thead>
-        <tbody>
-          {Object.entries(registerFile).map(([reg, { value, qi }]) => (
-            <tr key={reg}>
-              <td>{reg}</td>
-              <td>{value}</td>
-              <td>{qi}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Reg</TableHead>
+              <TableHead>Qi</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {registers.map((register) => (
+              <TableRow key={register.id}>
+                <TableCell>{register.id}</TableCell>
+                <TableCell>{register.qi}</TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  )
 }
 
-export default RegisterFile;
