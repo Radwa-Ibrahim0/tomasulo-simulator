@@ -51,15 +51,17 @@ export default function SimulationPage({ everything }) {
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-4">
-            <ReservationStations title="Addition Reservation Stations" size={addStation} />
-            <ReservationStations title="Multiplication Reservation Stations" size={mulStation} />
+            <ReservationStations title="Addition Reservation Station" size={addStation} />
+            <ReservationStations title="Multiplication Reservation Station" size={mulStation} />
+              <BufferTable title="Load Buffer" size={loadBuffer} showVQ={false} />
+              <BufferTable title="Store Buffer" size={storeBuffer} />
+              <BufferTable title="Branch Buffer" size={branchBuffer} />
+
+         
           </div>
           
           <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <BufferTable title="Load Buffers" size={loadBuffer} showVQ={false} />
-              <BufferTable title="Store Buffers" size={storeBuffer} />
-            </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <RegisterFile title="Floating Point Registers" size={32} values={floatRegisters} />
               <RegisterFile title="Integer Registers" size={32} values={integerRegisters} />

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect , useRef} from 'react';
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
@@ -57,6 +57,7 @@ const InstructionInput = ({ everything, setEverything }) => {
   });
 
   const [labels, setLabels] = useState([]);
+  const selectRef = useRef(null);
 
   const operations = [
     "ADD.D", "SUB.D", "MUL.D", "DIV.D",
@@ -69,6 +70,30 @@ const InstructionInput = ({ everything, setEverything }) => {
   const generateRegisters = (prefix, count) => {
     return Array.from({ length: count }, (_, i) => `${prefix}${i}`);
   };
+
+  const isAddInstructionDisabled = () => {
+    if (!currentInstruction.operation) return true;
+
+    if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
+      return !currentInstruction.registers[0] || !currentInstruction.registers[1] || !currentInstruction.immediate;
+    } else if (currentInstruction.operation === 'BNEZ') {
+      return !currentInstruction.registers[0] || !currentInstruction.immediate;
+    } else if (['ADDI', 'SUBI'].includes(currentInstruction.operation)) {
+      return !currentInstruction.registers[0] || !currentInstruction.registers[1] || currentInstruction.immediate === '';
+    } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
+      return !currentInstruction.registers[0] || currentInstruction.immediate === '';
+    } else if (['ADD.D', 'SUB.D', 'MUL.D', 'DIV.D'].includes(currentInstruction.operation)) {
+      return currentInstruction.registers.slice(0, 3).some(reg => !reg);
+    } else {
+      return currentInstruction.registers.slice(0, 2).some(reg => !reg);
+    }
+  };
+
+  useEffect(() => {
+    if (selectRef.current) {
+      selectRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [currentInstruction.operation]);
 
   const integerRegisters = generateRegisters("R", 32);
   const floatingRegisters = generateRegisters("F", 32);
@@ -101,13 +126,13 @@ const InstructionInput = ({ everything, setEverything }) => {
       }
       content += currentInstruction.operation;
 
-      if (['BEQ', 'BNE', 'BNEZ'].includes(currentInstruction.operation)) {
-        content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1] || ''}, ${currentInstruction.immediate}`;
+      if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
+        content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
+      } else if (currentInstruction.operation === 'BNEZ') {
+        content += ` ${currentInstruction.registers[0]}, ${currentInstruction.immediate}`;
       } else if (['ADDI', 'SUBI'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
-      } else if (['LW', 'LD', 'SW', 'SD'].includes(currentInstruction.operation)) {
-        content += ` ${currentInstruction.registers[0]}, ${currentInstruction.immediate}`;
-      } else if (['L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
+      } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.immediate}`;
       } else {
         content += ` ${currentInstruction.registers.filter(Boolean).join(', ')}`;
@@ -129,13 +154,20 @@ const InstructionInput = ({ everything, setEverything }) => {
 
   const handleConfigChange = (category, key, value) => {
     const newValue = parseInt(value);
-    setConfig(prev => ({
-      ...prev,
-      [category]: {
-        ...prev[category],
-        [key]: newValue
-      }
-    }));
+    if (category === 'cacheBlockSize' || category === 'cacheSize') {
+      setConfig(prev => ({
+        ...prev,
+        [category]: newValue
+      }));
+    } else {
+      setConfig(prev => ({
+        ...prev,
+        [category]: {
+          ...prev[category],
+          [key]: newValue
+        }
+      }));
+    }
     setEverything(prev => prev.map(item => 
       item.key === key ? { ...item, value: newValue } : item
     ));
@@ -185,357 +217,346 @@ const InstructionInput = ({ everything, setEverything }) => {
 
   return (
     <div className="container mx-auto p-4 space-y-8">
-      <h1 className="text-3xl font-bold">MIPS Instruction Input</h1>
+      <h1 className="text-4xl font-bold mb-6">MIPS Instruction Input</h1>
 
-      <Tabs defaultValue="file-upload" className="w-full">
-        <TabsList>
-          <TabsTrigger value="file-upload">File Upload</TabsTrigger>
-          <TabsTrigger value="instruction-builder">Instruction Builder</TabsTrigger>
-          <TabsTrigger value="configuration">Configuration</TabsTrigger>
-          <TabsTrigger value="register-values">Register Values</TabsTrigger>
-          <TabsTrigger value="current-instructions">Current Instructions</TabsTrigger>
-        </TabsList>
+      <div className="flex flex-col lg:flex-row gap-8">
+        <div className="w-full lg:w-1/2">
+          <Tabs defaultValue="file-upload" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="file-upload">File Upload</TabsTrigger>
+              <TabsTrigger value="instruction-builder">Instruction Builder</TabsTrigger>
+            </TabsList>
 
-        <TabsContent value="file-upload">
-          <Card>
-            <CardHeader>
-              <CardTitle>File Upload</CardTitle>
-              <CardDescription>Upload a text file with MIPS instructions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Input type="file" accept=".txt" onChange={handleFileUpload} />
-            </CardContent>
-          </Card>
-        </TabsContent>
+            <TabsContent value="file-upload">
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-2xl">File Upload</CardTitle>
+                  <CardDescription>Upload a text file with MIPS instructions</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <Input type="file" accept=".txt" onChange={handleFileUpload} />
+                </CardContent>
+              </Card>
+            </TabsContent>
 
-        <TabsContent value="instruction-builder">
-          <Card>
-            <CardHeader>
-              <CardTitle>Instruction Builder</CardTitle>
-              <CardDescription>Build instructions interactively</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-4 gap-4">
-                <div>
-                  <Label>Label (optional)</Label>
-                  <Input
-                    value={currentInstruction.label}
-                    onChange={(e) => setCurrentInstruction(prev => ({ ...prev, label: e.target.value }))}
-                    placeholder="Enter label"
-                  />
-                </div>
-                <div>
-                  <Label>Operation</Label>
-                  <Select
-                    value={currentInstruction.operation}
-                    onValueChange={(value) => setCurrentInstruction(prev => ({
-                      ...prev,
-                      operation: value,
-                      registers: ['', '', ''],
-                      immediate: '',
-                    }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select operation" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {operations.map((op) => (
-                        <SelectItem key={op} value={op}>{op}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                {['BEQ', 'BNE', 'BNEZ'].includes(currentInstruction.operation) && labels.length > 0 ? (
-                  <>
+            <TabsContent value="instruction-builder">
+              <Card className="mb-6">
+                <CardHeader>
+                  <CardTitle className="text-2xl">Instruction Builder</CardTitle>
+                  <CardDescription>Build instructions interactively</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <Label>Register 1</Label>
-                      <Select
-                        value={currentInstruction.registers[0]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[0] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select R1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {integerRegisters.map((reg) => (
-                            <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <Label>Label (optional)</Label>
+                      <Input
+                        value={currentInstruction.label}
+                        onChange={(e) => setCurrentInstruction(prev => ({ ...prev, label: e.target.value }))}
+                        placeholder="Enter label"
+                      />
                     </div>
-                    {currentInstruction.operation !== 'BNEZ' && (
-                      <div>
-                        <Label>Register 2</Label>
-                        <Select
-                          value={currentInstruction.registers[1]}
-                          onValueChange={(value) => {
-                            const newRegisters = [...currentInstruction.registers];
-                            newRegisters[1] = value;
-                            setCurrentInstruction(prev => ({
-                              ...prev,
-                              registers: newRegisters
-                            }));
-                          }}
-                        >
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select R2" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {integerRegisters.map((reg) => (
-                              <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    )}
-                    <div>
-                      <Label>Label</Label>
+                    <div ref={selectRef}>
+                      <Label>Operation</Label>
                       <Select
-                        value={currentInstruction.immediate}
+                        value={currentInstruction.operation}
                         onValueChange={(value) => setCurrentInstruction(prev => ({
                           ...prev,
-                          immediate: value
+                          operation: value,
+                          registers: ['', '', ''],
+                          immediate: '',
                         }))}
                       >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select label" />
+                        <SelectTrigger className="bg-white">
+                          <SelectValue placeholder="Select operation" />
                         </SelectTrigger>
-                        <SelectContent>
-                          {labels.map((label) => (
-                            <SelectItem key={label} value={label}>{label}</SelectItem>
+                        <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                          {operations.map((op) => (
+                            <SelectItem key={op} value={op}>{op}</SelectItem>
                           ))}
                         </SelectContent>
                       </Select>
                     </div>
-                  </>
-                ) : ['ADDI', 'SUBI'].includes(currentInstruction.operation) ? (
-                  <>
-                    <div>
-                      <Label>Register 1</Label>
-                      <Select
-                        value={currentInstruction.registers[0]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[0] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select R1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {integerRegisters.map((reg) => (
-                            <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Register 2</Label>
-                      <Select
-                        value={currentInstruction.registers[1]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[1] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select R2" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {integerRegisters.map((reg) => (
-                            <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Immediate</Label>
-                      <Input
-                        type="number"
-                        value={currentInstruction.immediate}
-                        onChange={(e) => setCurrentInstruction(prev => ({
-                          ...prev,
-                          immediate: e.target.value
-                        }))}
-                        placeholder="Enter immediate value"
-                      />
-                    </div>
-                  </>
-                ) : ['LW', 'LD', 'SW', 'SD'].includes(currentInstruction.operation) ? (
-                  <>
-                    <div>
-                      <Label>Register 1</Label>
-                      <Select
-                        value={currentInstruction.registers[0]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[0] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select R1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {integerRegisters.map((reg) => (
-                            <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Address</Label>
-                      <Input
-                        type="number"
-                        value={currentInstruction.immediate}
-                        onChange={(e) => setCurrentInstruction(prev => ({
-                          ...prev,
-                          immediate: e.target.value
-                        }))}
-                        placeholder="Enter address"
-                        min="0"
-                      />
-                    </div>
-                  </>
-                ) : ['L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation) ? (
-                  <>
-                    <div>
-                      <Label>Register 1</Label>
-                      <Select
-                        value={currentInstruction.registers[0]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[0] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select F1" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {floatingRegisters.map((reg) => (
-                            <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <div>
-                      <Label>Address</Label>
-                      <Input
-                        type="number"
-                        value={currentInstruction.immediate}
-                        onChange={(e) => setCurrentInstruction(prev => ({
-                          ...prev,
-                          immediate: e.target.value
-                        }))}
-                        placeholder="Enter address"
-                        min="0"
-                      />
-                    </div>
-                  </>
-                ) : ['ADD.D', 'SUB.D', 'MUL.D', 'DIV.D'].includes(currentInstruction.operation) ? (
-                  currentInstruction.registers.map((_, i) => (
-                    <div key={i}>
-                      <Label>Register {i + 1}</Label>
-                      <Select
-                        value={currentInstruction.registers[i]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[i] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={`Select F${i + 1}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {floatingRegisters.map((reg) => (
-                            <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))
-                ) : (
-                  currentInstruction.registers.map((_, i) => (
-                    <div key={i}>
-                      <Label>Register {i + 1}</Label>
-                      <Select
-                        value={currentInstruction.registers[i]}
-                        onValueChange={(value) => {
-                          const newRegisters = [...currentInstruction.registers];
-                          newRegisters[i] = value;
-                          setCurrentInstruction(prev => ({
-                            ...prev,
-                            registers: newRegisters
-                          }));
-                        }}
-                      >
-                        <SelectTrigger>
-                          <SelectValue placeholder={`Select R${i + 1}`} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {(currentInstruction.operation.includes('.D') ? floatingRegisters : integerRegisters)
-                            .map((reg) => (
-                              <SelectItem key={reg} value={reg}>{reg}</SelectItem>
-                            ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  ))
-                )}
-              </div>
-              <Button 
-                className="w-full mt-4" 
-                onClick={handleAddInstruction}
-              >
-                Add Instruction
-              </Button>
-            </CardContent>
-          </Card>
-        </TabsContent>
+                    {['BEQ', 'BNE', 'BNEZ'].includes(currentInstruction.operation) && labels.length > 0 ? (
+                      <>
+                        <div>
+                          <Label>Register 1</Label>
+                          <Select
+                            value={currentInstruction.registers[0]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[0] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select R1" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {integerRegisters.map((reg) => (
+                                <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        {currentInstruction.operation !== 'BNEZ' && (
+                          <div>
+                            <Label>Register 2</Label>
+                            <Select
+                              value={currentInstruction.registers[1]}
+                              onValueChange={(value) => {
+                                const newRegisters = [...currentInstruction.registers];
+                                newRegisters[1] = value;
+                                setCurrentInstruction(prev => ({
+                                  ...prev,
+                                  registers: newRegisters
+                                }));
+                              }}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Select R2" />
+                              </SelectTrigger>
+                              <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                                {integerRegisters.map((reg) => (
+                                  <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                        <div>
+                          <Label>Label</Label>
+                          <Select
+                            value={currentInstruction.immediate}
+                            onValueChange={(value) => setCurrentInstruction(prev => ({
+                              ...prev,
+                              immediate: value
+                            }))}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select label" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {labels.map((label) => (
+                                <SelectItem key={label} value={label}>{label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </>
+                    ) : ['ADDI', 'SUBI'].includes(currentInstruction.operation) ? (
+                      <>
+                        <div>
+                          <Label>Register 1</Label>
+                          <Select
+                            value={currentInstruction.registers[0]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[0] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select R1" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {integerRegisters.map((reg) => (
+                                <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Register 2</Label>
+                          <Select
+                            value={currentInstruction.registers[1]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[1] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select R2" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {integerRegisters.map((reg) => (
+                                <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Immediate</Label>
+                          <Input
+                            type="number"
+                            value={currentInstruction.immediate}
+                            onChange={(e) => setCurrentInstruction(prev => ({
+                              ...prev,
+                              immediate: e.target.value
+                            }))}
+                            placeholder="Enter immediate value"
+                          />
+                        </div>
+                      </>
+                    ) : ['LW', 'LD', 'SW', 'SD'].includes(currentInstruction.operation) ? (
+                      <>
+                        <div>
+                          <Label>Register 1</Label>
+                          <Select
+                            value={currentInstruction.registers[0]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[0] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select R1" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {integerRegisters.map((reg) => (
+                                <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Address</Label>
+                          <Input
+                            type="number"
+                            value={currentInstruction.immediate}
+                            onChange={(e) => setCurrentInstruction(prev => ({
+                              ...prev,
+                              immediate: e.target.value
+                            }))}
+                            placeholder="Enter address"
+                            min="0"
+                          />
+                        </div>
+                      </>
+                    ) : ['L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation) ? (
+                      <>
+                        <div>
+                          <Label>Register 1</Label>
+                          <Select
+                            value={currentInstruction.registers[0]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[0] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Select F1" />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {floatingRegisters.map((reg) => (
+                                <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label>Address</Label>
+                          <Input
+                                        value={currentInstruction.immediate}
+                            onChange={(e) => setCurrentInstruction(prev => ({
+                              ...prev,
+                              immediate: e.target.value
+                            }))}
+                            placeholder="Enter address"
+                            min="0"
+                          />
+                        </div>
+                      </>
+                    ) : ['ADD.D', 'SUB.D', 'MUL.D', 'DIV.D'].includes(currentInstruction.operation) ? (
+                      currentInstruction.registers.map((_, i) => (
+                        <div key={i}>
+                          <Label>Register {i + 1}</Label>
+                          <Select
+                            value={currentInstruction.registers[i]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[i] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder={`Select F${i + 1}`} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {floatingRegisters.map((reg) => (
+                                <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))
+                    ) : (
+                      currentInstruction.registers.map((_, i) => (
+                        <div key={i}>
+                          <Label>Register {i + 1}</Label>
+                          <Select
+                            value={currentInstruction.registers[i]}
+                            onValueChange={(value) => {
+                              const newRegisters = [...currentInstruction.registers];
+                              newRegisters[i] = value;
+                              setCurrentInstruction(prev => ({
+                                ...prev,
+                                registers: newRegisters
+                              }));
+                            }}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder={`Select R${i + 1}`} />
+                            </SelectTrigger>
+                            <SelectContent className="bg-white shadow-md rounded-md border border-gray-300">                              {(currentInstruction.operation.includes('.D') ? floatingRegisters : integerRegisters)
+                                .map((reg) => (
+                                  <SelectItem key={reg} value={reg}>{reg}</SelectItem>
+                                ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  <Button 
+                    className="w-full mt-4 bg-black text-white hover:bg-gray-800" 
+                    onClick={handleAddInstruction}
+                    disabled={isAddInstructionDisabled()}
+                  >
+                    Add Instruction
+                  </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
 
-        <TabsContent value="configuration">
-          <Card>
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Configuration</CardTitle>
+              <CardTitle className="text-2xl">Configuration</CardTitle>
               <CardDescription>Set cache and latency parameters</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="cacheBlockSize">Cache Block Size</Label>
                     <Input
                       id="cacheBlockSize"
                       type="number"
                       value={config.cacheBlockSize}
-                      onChange={(e) => handleConfigChange('config', 'cacheBlockSize', e.target.value)}
-                      min="1"
+                      onChange={(e) => handleConfigChange('cacheBlockSize', 'cacheBlockSize', e.target.value)}
+                      min={1}
                     />
                   </div>
                   <div>
@@ -544,14 +565,14 @@ const InstructionInput = ({ everything, setEverything }) => {
                       id="cacheSize"
                       type="number"
                       value={config.cacheSize}
-                      onChange={(e) => handleConfigChange('config', 'cacheSize', e.target.value)}
-                      min="1"
+                      onChange={(e) => handleConfigChange('cacheSize', 'cacheSize', e.target.value)}
+                      min={1}
                     />
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold mb-2">Latencies</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                  <h3 className="text-xl font-semibold mb-2">Latencies</h3>
+                  <div className="grid grid-cols-3 gap-4">
                     {Object.entries(config.latencies).map(([key, value]) => (
                       <div key={key}>
                         <Label htmlFor={key}>{key.replace(/([A-Z])/g, ' $1').trim()}</Label>
@@ -560,24 +581,7 @@ const InstructionInput = ({ everything, setEverything }) => {
                           type="number"
                           value={value}
                           onChange={(e) => handleConfigChange('latencies', key, e.target.value)}
-                          min="1"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Station and Buffer Sizes</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                    {Object.entries(config.stations).map(([key, value]) => (
-                      <div key={key}>
-                        <Label htmlFor={key}>{key.replace(/([A-Z])/g, ' $1').trim()}</Label>
-                        <Input
-                          id={key}
-                          type="number"
-                          value={value}
-                          onChange={(e) => handleConfigChange('stations', key, e.target.value)}
-                          min="1"
+                          min={0}
                         />
                       </div>
                     ))}
@@ -586,80 +590,16 @@ const InstructionInput = ({ everything, setEverything }) => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
+        </div>
 
-        <TabsContent value="register-values">
-          <Card>
+        <div className="w-full lg:w-1/2">
+          <Card className="mb-6">
             <CardHeader>
-              <CardTitle>Register Values</CardTitle>
-              <CardDescription>Set initial values for registers</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Integer Registers</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Register</TableHead>
-                        <TableHead>Value</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {registerValues.integer.map((value, index) => (
-                        <TableRow key={`int-${index}`}>
-                          <TableCell>R{index}</TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              value={value}
-                              onChange={(e) => handleRegisterValueChange('integer', index, e.target.value)}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-                <div>
-                  <h3 className="text-lg font-semibold mb-2">Floating-Point Registers</h3>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Register</TableHead>
-                        <TableHead>Value</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {registerValues.float.map((value, index) => (
-                        <TableRow key={`float-${index}`}>
-                          <TableCell>F{index}</TableCell>
-                          <TableCell>
-                            <Input
-                              type="number"
-                              step="0.01"
-                              value={value}
-                              onChange={(e) => handleRegisterValueChange('float', index, e.target.value)}
-                            />
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="current-instructions">
-          <Card>
-            <CardHeader>
-              <CardTitle>Current Instructions</CardTitle>
+              <CardTitle className="text-2xl">Current Instructions</CardTitle>
               <CardDescription>List of all added instructions</CardDescription>
             </CardHeader>
             <CardContent>
-              <div className="bg-muted p-4 rounded-md space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
+              <div className="bg-gray-100 p-4 rounded-md space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
                 {everything.filter(item => item.type === 'instruction').map((item, index) => (
                   <div key={index} className="text-sm font-mono">
                     {item.content}
@@ -668,8 +608,90 @@ const InstructionInput = ({ everything, setEverything }) => {
               </div>
             </CardContent>
           </Card>
-        </TabsContent>
-      </Tabs>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-2xl">Station and Buffer Sizes</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 gap-4">
+                {Object.entries(config.stations).map(([key, value]) => (
+                  <div key={key}>
+                    <Label htmlFor={key}>{key.replace(/([A-Z])/g, ' $1').trim()}</Label>
+                    <Input
+                      id={key}
+                      type="number"
+                      value={value}
+                      onChange={(e) => handleConfigChange('stations', key, e.target.value)}
+                      min={1}
+                    />
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-2xl">Register Values</CardTitle>
+          <CardDescription>Set initial values for registers</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-6">
+            <div className="w-full md:w-1/2">
+              <h3 className="text-xl font-semibold mb-2">Integer Registers</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Register</TableHead>
+                    <TableHead>Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {registerValues.integer.map((value, index) => (
+                    <TableRow key={`int-${index}`}>
+                      <TableCell>R{index}</TableCell>
+                      <TableCell>
+                        <Input
+                                    value={value}
+                          onChange={(e) => handleRegisterValueChange('integer', index, e.target.value)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+            <div className="w-full md:w-1/2">
+              <h3 className="text-xl font-semibold mb-2">Floating-Point Registers</h3>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Register</TableHead>
+                    <TableHead>Value</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {registerValues.float.map((value, index) => (
+                    <TableRow key={`float-${index}`}>
+                      <TableCell>F{index}</TableCell>
+                      <TableCell>
+                        <Input
+                                    step="0.01"
+                          value={value}
+                          onChange={(e) => handleRegisterValueChange('float', index, e.target.value)}
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 };

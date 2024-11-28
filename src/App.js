@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useEffect } from 'react';
 import InstructionInput from './components/InstructionInput';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
@@ -22,9 +21,9 @@ function App() {
   const [executionStatus, setExecutionStatus] = useState({});
   const [commonDataBus, setCommonDataBus] = useState(null);
   const [cycle, setCycle] = useState(0);
+  const [showSimulation, setShowSimulation] = useState(false); // New state to toggle visibility
 
   const simulateCycle = () => {
-    // 1. Instruction issue
     if (instructions.length > 0) {
       const instruction = instructions[0];
       if (canIssueInstruction(instruction)) {
@@ -32,14 +31,8 @@ function App() {
         setInstructions(instructions.slice(1));
       }
     }
-
-    // 2. Execution
     executeInstructions();
-
-    // 3. Write result
     writeResults();
-
-    // Update states
     setRegisterFile({ ...registerFile });
     setReservationStations({ ...reservationStations });
     setLoadStoreBuffers({ ...loadStoreBuffers });
@@ -54,10 +47,9 @@ function App() {
   useEffect(() => {  
     console.log(everything);
   }, [everything]);
-  
+
   const canIssueInstruction = (instruction) => {
-    // Check for structural hazards
-    // Return true if the instruction can be issued
+    return true; // Placeholder for actual implementation
   };
   
   const issueInstruction = (instruction) => {
@@ -74,25 +66,68 @@ function App() {
 
   return (
     <Router>
-      <div className="App">
-        <h1>Tomasulo Algorithm Simulator</h1>
-        <InstructionInput everything={everything} setEverything={setEverything} />
-        <Link to="/simulation">
-          <button>Open Simulation Page</button>
-        </Link>
-        {/* <ConfigurationPanel config={config} setConfig={setConfig} />
-        <RegisterFile registerFile={registerFile} />
-        <ReservationStations stations={reservationStations} />
-        <LoadStoreBuffers buffers={loadStoreBuffers} />
-        <CacheStatus cacheStatus={cacheStatus} />
-        <ExecutionStatus status={executionStatus} />
-        <CommonDataBus data={commonDataBus} /> */}
-        {/* <button onClick={simulateCycle}>Next Cycle</button>
-        <div>Current Cycle: {cycle}</div> */}
+      <div className="App" style={{ margin: '0 auto', maxWidth: '1200px', padding: '20px' }}>
+        {/* Header Section */}
+        <h1 style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '20px' }}>
+          Tomasulo Algorithm Simulator
+        </h1>
+        
+        {/* Buttons Section: Flexbox container for alignment */}
+        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', marginBottom: '30px' }}>
+          {/* Display Simulation Button */}
+          {!showSimulation && (
+            <button 
+              style={{
+                backgroundColor: 'black', 
+                color: 'white', 
+                padding: '12px 24px', 
+                border: 'none', 
+                borderRadius: '5px', 
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'background-color 0.3s ease'
+              }} 
+              onClick={() => setShowSimulation(true)}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#333'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'black'}
+            >
+              Display Simulation
+            </button>
+          )}
+
+          {/* Back Button */}
+          {showSimulation && (
+            <button 
+              style={{
+                backgroundColor: 'black', 
+                color: 'white', 
+                padding: '12px 24px', 
+                border: 'none', 
+                borderRadius: '5px', 
+                cursor: 'pointer',
+                fontSize: '1rem',
+                transition: 'background-color 0.3s ease'
+              }} 
+              onClick={() => setShowSimulation(false)}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#333'}
+              onMouseOut={(e) => e.target.style.backgroundColor = 'black'}
+            >
+              Back
+            </button>
+          )}
+        </div>
+
+        {/* Conditionally render InstructionInput or SimulationPage */}
+        {!showSimulation && (
+          <div style={{ marginBottom: '40px' }}>
+            <InstructionInput everything={everything} setEverything={setEverything} />
+          </div>
+        )}
+
+        {showSimulation && (
+          <SimulationPage everything={everything} />
+        )}
       </div>
-      <Routes>
-        <Route path="/simulation" element={<SimulationPage everything={everything} />} />
-      </Routes>
     </Router>
   );
 }
