@@ -8,12 +8,8 @@ import {
 } from "./ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
-export default function RegisterFileTable({ title, size, values }) {
-  // console.log(values);
-  const registers = Array.from({ length: size }, (_, index) => ({
-    id: `${title.includes('Integer') ? 'R' : 'F'}${index}`,
-    qi: values[index] || 0,
-  }));
+export default function RegisterFileTable({ title, registers }) {
+  // console.log(registers);
 
   return (
     <Card>
@@ -30,9 +26,9 @@ export default function RegisterFileTable({ title, size, values }) {
           </TableHeader>
           <TableBody>
             {registers.map((register) => (
-              <TableRow key={register.id}>
-                <TableCell>{register.id}</TableCell>
-                <TableCell>{register.qi}</TableCell>
+              <TableRow key={register.index}>
+                <TableCell>{title.includes('Integer') ? `R${register.index}` : `F${register.index}`}</TableCell>
+                <TableCell>{register.value}</TableCell>
               </TableRow>
             ))}
           </TableBody>

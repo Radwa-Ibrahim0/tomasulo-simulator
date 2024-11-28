@@ -111,10 +111,14 @@ const InstructionInput = ({ everything, setEverything }) => {
         const instructions = text.split('\n')
           .map(line => line.trim())
           .filter(line => line.length > 0)
-          .map(line => ({
-            type: 'instruction',
-            content: line
-          }));
+          .map(line => {
+            const [labelPart, instructionPart] = line.includes(':') ? line.split(':') : ['', line];
+            return {
+              type: 'instruction',
+              label: labelPart.trim(),
+              content: instructionPart.trim()
+            };
+          });
         setEverything(prev => [...prev, ...instructions]);
       };
       reader.readAsText(file);
@@ -209,7 +213,7 @@ const InstructionInput = ({ everything, setEverything }) => {
   };
 
   useEffect(() => {
-    setEverything([
+    const initialEverything = [
       { type: 'config', key: 'cacheBlockSize', value: config.cacheBlockSize },
       { type: 'config', key: 'cacheSize', value: config.cacheSize },
       { type: 'config', key: 'hitTime', value: config.hitTime },
@@ -236,8 +240,9 @@ const InstructionInput = ({ everything, setEverything }) => {
         index,
         value
       }))
-    ]);
-  }, []);
+    ];
+    setEverything(initialEverything);
+  }, []); // Empty dependency array to run only once
 
   return (
     <div className="container mx-auto p-4 space-y-8">
