@@ -20,53 +20,16 @@ function App() {
   const [cacheStatus, setCacheStatus] = useState({});
   const [executionStatus, setExecutionStatus] = useState({});
   const [commonDataBus, setCommonDataBus] = useState(null);
-  const [cycle, setCycle] = useState(0);
+  const [cycle, setCycle] = useState(0); // Initialize clock cycle to start from 0
   const [showSimulation, setShowSimulation] = useState(false); // New state to toggle visibility
 
-  const simulateCycle = () => {
-    if (instructions.length > 0) {
-      const instruction = instructions[0];
-      if (canIssueInstruction(instruction)) {
-        issueInstruction(instruction);
-        setInstructions(instructions.slice(1));
-      }
-    }
-    executeInstructions();
-    writeResults();
-    setRegisterFile({ ...registerFile });
-    setReservationStations({ ...reservationStations });
-    setLoadStoreBuffers({ ...loadStoreBuffers });
-    setCacheStatus({ ...cacheStatus });
-    setExecutionStatus({ ...executionStatus });
-  };
-
-  useEffect(() => {  
-    simulateCycle();
-  }, [cycle]);
-
-  useEffect(() => {  
-    console.log(everything);
-  }, [everything]);
-
-  const canIssueInstruction = (instruction) => {
-    return true; // Placeholder for actual implementation
-  };
-  
-  const issueInstruction = (instruction) => {
-    // Issue the instruction to the appropriate reservation station or buffer
-  };
-  
-  const executeInstructions = () => {
-    // Execute instructions in reservation stations and load/store buffers
-  };
-  
-  const writeResults = () => {
-    // Write results to the CDB and update the register file
-  };
+  // useEffect(() => {  
+  //   console.log(everything);
+  // }, [everything]);
 
   return (
     <Router>
-      <div className="App" style={{ margin: '0 auto', maxWidth: '1200px', padding: '20px' }}>
+      <div className="App" style={{ margin: '0 auto', padding: '20px' }}>
         {/* Header Section */}
         <h1 style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '20px' }}>
           Tomasulo Algorithm Simulator

@@ -9,8 +9,9 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
 export default function RegisterFileTable({ title, size, values }) {
+  // console.log(values);
   const registers = Array.from({ length: size }, (_, index) => ({
-    id: `${title[0]}${index}`,
+    id: `${title.includes('Integer') ? 'R' : 'F'}${index}`,
     qi: values[index] || 0,
   }));
 

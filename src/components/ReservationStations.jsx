@@ -8,8 +8,9 @@ import {
 } from "./ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 
-export default function ReservationStationTable({ title, size }) {
-  const stations = Array.from({ length: size }, (_, index) => ({
+export default function ReservationStationTable({ title, size, rows }) {
+  // console.log(rows);
+  const stations = rows.length > 0 ? rows : Array.from({ length: size }, (_, index) => ({
     id: `${title[0]}${index + 1}`,
     time: 0,
     busy: 0,

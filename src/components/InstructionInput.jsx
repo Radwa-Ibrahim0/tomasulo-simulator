@@ -36,13 +36,16 @@ const InstructionInput = ({ everything, setEverything }) => {
 
   const [config, setConfig] = useState({
     cacheBlockSize: 64,
-    cacheSize: 1024,
+    cacheSize: 128,
+    hitTime: 1,
+    missPenalty: 4,
+    memorySize: 2048,
     latencies: {
       addD: 1, subD: 1, mulD: 1, divD: 1,
       addi: 1, subi: 1,
       loadWord: 1, loadDouble: 1, loadSingle: 1,
       storeWord: 1, storeDouble: 1, storeSingle: 1,
-      beq: 1, bne: 1, bnez: 1
+      beq: 1, bne: 1
     },
     stations: {
       mulStation: 2, 
@@ -50,6 +53,9 @@ const InstructionInput = ({ everything, setEverything }) => {
       loadBuffer: 3, storeBuffer: 3, branchBuffer: 2
     }
   });
+
+  const [memoryValues, setMemoryValues] = useState([]);
+  const [memoryInput, setMemoryInput] = useState({ address: '', value: '' });
 
   const [registerValues, setRegisterValues] = useState({
     integer: Array(32).fill(''),
@@ -64,8 +70,8 @@ const InstructionInput = ({ everything, setEverything }) => {
     "ADDI", "SUBI",
     "LW", "LD", "L.S", "L.D",
     "SW", "SD", "S.S", "S.D",
-    "BEQ", "BNE", "BNEZ"
-  ].filter(op => !['BEQ', 'BNE', 'BNEZ'].includes(op) || labels.length > 0);
+    "BEQ", "BNE"
+  ].filter(op => !['BEQ', 'BNE'].includes(op) || labels.length > 0);
 
   const generateRegisters = (prefix, count) => {
     return Array.from({ length: count }, (_, i) => `${prefix}${i}`);
@@ -76,8 +82,6 @@ const InstructionInput = ({ everything, setEverything }) => {
 
     if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || !currentInstruction.registers[1] || !currentInstruction.immediate;
-    } else if (currentInstruction.operation === 'BNEZ') {
-      return !currentInstruction.registers[0] || !currentInstruction.immediate;
     } else if (['ADDI', 'SUBI'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || !currentInstruction.registers[1] || currentInstruction.immediate === '';
     } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
@@ -128,8 +132,6 @@ const InstructionInput = ({ everything, setEverything }) => {
 
       if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
-      } else if (currentInstruction.operation === 'BNEZ') {
-        content += ` ${currentInstruction.registers[0]}, ${currentInstruction.immediate}`;
       } else if (['ADDI', 'SUBI'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
       } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
@@ -154,7 +156,7 @@ const InstructionInput = ({ everything, setEverything }) => {
 
   const handleConfigChange = (category, key, value) => {
     const newValue = parseInt(value);
-    if (category === 'cacheBlockSize' || category === 'cacheSize') {
+    if (category === 'cacheBlockSize' || category === 'cacheSize' || category === 'hitTime' || category === 'missPenalty' || category === 'memorySize') {
       setConfig(prev => ({
         ...prev,
         [category]: newValue
@@ -171,6 +173,26 @@ const InstructionInput = ({ everything, setEverything }) => {
     setEverything(prev => prev.map(item => 
       item.key === key ? { ...item, value: newValue } : item
     ));
+  };
+
+  const handleMemoryValueChange = (key, value) => {
+    setMemoryInput(prev => ({
+      ...prev,
+      [key]: value
+    }));
+  };
+
+  const handleAddMemoryValue = () => {
+    const { address, value } = memoryInput;
+    if (address && value) {
+      const newMemoryValue = { address: parseInt(address), value: parseInt(value) };
+      setMemoryValues(prev => {
+        const updatedMemoryValues = [...prev, newMemoryValue].sort((a, b) => a.address - b.address);
+        setEverything(prevEverything => [...prevEverything.filter(item => item.type !== 'memory'), ...updatedMemoryValues.map(item => ({ type: 'memory', ...item }))]);
+        return updatedMemoryValues;
+      });
+      setMemoryInput({ address: '', value: '' });
+    }
   };
 
   const handleRegisterValueChange = (type, index, value) => {
@@ -190,6 +212,8 @@ const InstructionInput = ({ everything, setEverything }) => {
     setEverything([
       { type: 'config', key: 'cacheBlockSize', value: config.cacheBlockSize },
       { type: 'config', key: 'cacheSize', value: config.cacheSize },
+      { type: 'config', key: 'hitTime', value: config.hitTime },
+      { type: 'config', key: 'missPenalty', value: config.missPenalty },
       ...Object.entries(config.latencies).map(([key, value]) => ({
         type: 'latency',
         key,
@@ -275,7 +299,7 @@ const InstructionInput = ({ everything, setEverything }) => {
                         </SelectContent>
                       </Select>
                     </div>
-                    {['BEQ', 'BNE', 'BNEZ'].includes(currentInstruction.operation) && labels.length > 0 ? (
+                    {['BEQ', 'BNE'].includes(currentInstruction.operation) && labels.length > 0 ? (
                       <>
                         <div>
                           <Label>Register 1</Label>
@@ -299,7 +323,6 @@ const InstructionInput = ({ everything, setEverything }) => {
                             </SelectContent>
                           </Select>
                         </div>
-                        {currentInstruction.operation !== 'BNEZ' && (
                           <div>
                             <Label>Register 2</Label>
                             <Select
@@ -322,7 +345,6 @@ const InstructionInput = ({ everything, setEverything }) => {
                               </SelectContent>
                             </Select>
                           </div>
-                        )}
                         <div>
                           <Label>Label</Label>
                           <Select
@@ -543,11 +565,47 @@ const InstructionInput = ({ everything, setEverything }) => {
 
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-2xl">Configuration</CardTitle>
-              <CardDescription>Set cache and latency parameters</CardDescription>
+              <CardTitle className="text-2xl">Memory Parameters</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="memoryAddress">Memory Address</Label>
+                    <Input
+                      id="memoryAddress"
+                      type="number"
+                      value={memoryInput.address}
+                      onChange={(e) => handleMemoryValueChange('address', e.target.value)}
+                      min={0}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="memoryValue">Memory Value</Label>
+                    <Input
+                      id="memoryValue"
+                      type="number"
+                      value={memoryInput.value}
+                      onChange={(e) => handleMemoryValueChange('value', e.target.value)}
+                    />
+                  </div>
+                </div>
+                <Button 
+                  className="w-full mt-4 bg-black text-white hover:bg-gray-800" 
+                  onClick={handleAddMemoryValue}
+                >
+                  Add Memory Value
+                </Button>
+                <div>
+                  <h3 className="text-xl font-semibold mb-2">Memory Values</h3>
+                  <div className="bg-gray-100 p-4 rounded-md space-y-1 min-h-[100px] max-h-[200px] overflow-y-auto">
+                    {memoryValues.map((item, index) => (
+                      <div key={index} className="text-sm font-mono">
+                        Address: {item.address}, Value: {item.value}
+                      </div>
+                    ))}
+                  </div>
+                </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
                     <Label htmlFor="cacheBlockSize">Cache Block Size</Label>
@@ -556,7 +614,8 @@ const InstructionInput = ({ everything, setEverything }) => {
                       type="number"
                       value={config.cacheBlockSize}
                       onChange={(e) => handleConfigChange('cacheBlockSize', 'cacheBlockSize', e.target.value)}
-                      min={1}
+                      min={16}
+                      step={8}
                     />
                   </div>
                   <div>
@@ -566,9 +625,40 @@ const InstructionInput = ({ everything, setEverything }) => {
                       type="number"
                       value={config.cacheSize}
                       onChange={(e) => handleConfigChange('cacheSize', 'cacheSize', e.target.value)}
+                      min={64}
+                      step={8}
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="hitTime">Hit Time</Label>
+                    <Input
+                      id="hitTime"
+                      type="number"
+                      value={config.hitTime}
+                      onChange={(e) => handleConfigChange('hitTime', 'hitTime', e.target.value)}
                       min={1}
                     />
                   </div>
+                  <div>
+                    <Label htmlFor="missPenalty">Miss Penalty</Label>
+                    <Input
+                      id="missPenalty"
+                      type="number"
+                      value={config.missPenalty}
+                      onChange={(e) => handleConfigChange('missPenalty', 'missPenalty', e.target.value)}
+                      min={1}
+                    />
+                  </div>
+                  {/* <div>
+                    <Label htmlFor="memorySize">Memory Size (words)</Label>
+                    <Input
+                      id="memorySize"
+                      type="number"
+                      value={config.memorySize}
+                      onChange={(e) => handleConfigChange('memorySize', 'memorySize', e.target.value)}
+                      min={config.cacheSize + 1}
+                    />
+                  </div> */}
                 </div>
                 <div>
                   <h3 className="text-xl font-semibold mb-2">Latencies</h3>
@@ -581,30 +671,12 @@ const InstructionInput = ({ everything, setEverything }) => {
                           type="number"
                           value={value}
                           onChange={(e) => handleConfigChange('latencies', key, e.target.value)}
-                          min={0}
+                          min={1}
                         />
                       </div>
                     ))}
                   </div>
                 </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-
-        <div className="w-full lg:w-1/2">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-2xl">Current Instructions</CardTitle>
-              <CardDescription>List of all added instructions</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="bg-gray-100 p-4 rounded-md space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
-                {everything.filter(item => item.type === 'instruction').map((item, index) => (
-                  <div key={index} className="text-sm font-mono">
-                    {item.content}
-                  </div>
-                ))}
               </div>
             </CardContent>
           </Card>
@@ -631,67 +703,87 @@ const InstructionInput = ({ everything, setEverything }) => {
             </CardContent>
           </Card>
         </div>
-      </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Register Values</CardTitle>
-          <CardDescription>Set initial values for registers</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex flex-col md:flex-row gap-6">
-            <div className="w-full md:w-1/2">
-              <h3 className="text-xl font-semibold mb-2">Integer Registers</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Register</TableHead>
-                    <TableHead>Value</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {registerValues.integer.map((value, index) => (
-                    <TableRow key={`int-${index}`}>
-                      <TableCell>R{index}</TableCell>
-                      <TableCell>
-                        <Input
-                                    value={value}
-                          onChange={(e) => handleRegisterValueChange('integer', index, e.target.value)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-            <div className="w-full md:w-1/2">
-              <h3 className="text-xl font-semibold mb-2">Floating-Point Registers</h3>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Register</TableHead>
-                    <TableHead>Value</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {registerValues.float.map((value, index) => (
-                    <TableRow key={`float-${index}`}>
-                      <TableCell>F{index}</TableCell>
-                      <TableCell>
-                        <Input
-                                    step="0.01"
-                          value={value}
-                          onChange={(e) => handleRegisterValueChange('float', index, e.target.value)}
-                        />
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+        <div className="w-full lg:w-1/2">
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-2xl">Current Instructions</CardTitle>
+              <CardDescription>List of all added instructions</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="bg-gray-100 p-4 rounded-md space-y-1 min-h-[200px] max-h-[400px] overflow-y-auto">
+                {everything.filter(item => item.type === 'instruction').map((item, index) => (
+                  <div key={index} className="text-sm font-mono">
+                    {item.content}
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="mb-6">
+            <CardHeader>
+              <CardTitle className="text-2xl">Register Values</CardTitle>
+              <CardDescription>Set initial values for registers</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-col md:flex-row gap-6">
+                <div className="w-full md:w-1/2">
+                  <h3 className="text-xl font-semibold mb-2">Integer Registers</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Register</TableHead>
+                        <TableHead>Value</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {registerValues.integer.map((value, index) => (
+                        <TableRow key={`int-${index}`}>
+                          <TableCell>R{index}</TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              value={value}
+                              onChange={(e) => handleRegisterValueChange('integer', index, e.target.value)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+                <div className="w-full md:w-1/2">
+                  <h3 className="text-xl font-semibold mb-2">Floating-Point Registers</h3>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Register</TableHead>
+                        <TableHead>Value</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {registerValues.float.map((value, index) => (
+                        <TableRow key={`float-${index}`}>
+                          <TableCell>F{index}</TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.01"
+                              value={value}
+                              onChange={(e) => handleRegisterValueChange('float', index, e.target.value)}
+                            />
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 };
