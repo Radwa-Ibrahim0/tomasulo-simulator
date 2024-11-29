@@ -45,7 +45,9 @@ export default function SimulationPage({ everything }) {
       vj: '',
       vk: '',
       qj: '',
-      qk: ''
+      qk: '',
+      latency: '',
+      instructionId: ''
     }));
     setAdditionStationArray(initialAdditionStationArray);
 
@@ -58,7 +60,10 @@ export default function SimulationPage({ everything }) {
       vj: '',
       vk: '',
       qj: '',
-      qk: ''
+      qk: '',
+      latency: '',
+      instructionId: ''
+
     }));
     setMultiplicationStationArray(initialMultiplicationStationArray);
 
@@ -71,7 +76,9 @@ export default function SimulationPage({ everything }) {
       vj: '',
       vk: '',
       qj: '',
-      qk: ''
+      qk: '',
+      latency: '',
+      instructionId: ''
     }));
     setBranchBufferArray(initialBranchBufferArray);
 
@@ -80,7 +87,9 @@ export default function SimulationPage({ everything }) {
       type: 'loadBufferRow',
       id: `L${index + 1}`,
       busy: 0,
-      address: ''
+      address: '',
+      latency: '',
+      instructionId: ''
     }));
     setLoadBufferArray(initialLoadBufferArray);
 
@@ -91,7 +100,9 @@ export default function SimulationPage({ everything }) {
       busy: 0,
       address: '',
       v: '',
-      q: ''
+      q: '',
+      latency: '',
+      instructionId: ''
     }));
     setStoreBufferArray(initialStoreBufferArray);
 
@@ -134,7 +145,7 @@ export default function SimulationPage({ everything }) {
   const memoryValues = updatedEverything.filter(item => item.type === 'memory');
 
   const preprocessInstructions = (instructions) => {
-    return instructions.map((instruction) => {
+    return instructions.map((instruction, index) => {
       let content = instruction.content;
       let label = instruction.label || '';
       if (content.includes(':')) {
@@ -142,6 +153,7 @@ export default function SimulationPage({ everything }) {
       }
       const parts = content.split(' ').map(part => part.replace(',', ''));
       const splitInstruction = {
+        id: `I${index + 1}`, // Add unique ID
         iteration: '',
         instruction: parts[0] || '',
         dest: '',
@@ -166,6 +178,43 @@ export default function SimulationPage({ everything }) {
     });
   };
 
+  const getLatency = (instruction) => {
+    switch (instruction) {
+      case 'ADD.D':
+        return everything.find(item => item.key === 'addD')?.value || 0;
+      case 'SUB.D':
+        return everything.find(item => item.key === 'subD')?.value || 0;
+      case 'MUL.D':
+        return everything.find(item => item.key === 'mulD')?.value || 0;
+      case 'DIV.D':
+        return everything.find(item => item.key === 'divD')?.value || 0;
+      case 'ADDI':
+        return everything.find(item => item.key === 'addi')?.value || 0;
+      case 'SUBI':
+        return everything.find(item => item.key === 'subi')?.value || 0;
+      case 'LD':
+      case 'LW':
+        return everything.find(item => item.key === 'loadWord')?.value || 0;
+      case 'L.D':
+        return everything.find(item => item.key === 'loadDouble')?.value || 0;
+      case 'L.S':
+        return everything.find(item => item.key === 'loadSingle')?.value || 0;
+      case 'SD':
+      case 'SW':
+        return everything.find(item => item.key === 'storeWord')?.value || 0;
+      case 'S.D':
+        return everything.find(item => item.key === 'storeDouble')?.value || 0;
+      case 'S.S':
+        return everything.find(item => item.key === 'storeSingle')?.value || 0;
+      case 'BEQ':
+        return everything.find(item => item.key === 'beq')?.value || 0;
+      case 'BNE':
+        return everything.find(item => item.key === 'bne')?.value || 0;
+      default:
+        return 0;
+    }
+  };
+
   const issue = () => {
     const lastInstruction = shownInstructions[shownInstructions.length - 1];
     if (!lastInstruction || lastInstruction.issue) return; // Check if the instruction already has an issue value
@@ -181,6 +230,8 @@ export default function SimulationPage({ everything }) {
       if (availableRow) {
         availableRow.busy = 1;
         availableRow.op = lastInstruction.instruction;
+        availableRow.latency = getLatency(lastInstruction.instruction);
+        availableRow.instructionId = lastInstruction.id; // Pass unique ID
 
         const setRegisterValues = (register, value, vField, qField) => {
           if (register.startsWith('R')) {
@@ -233,6 +284,8 @@ export default function SimulationPage({ everything }) {
       if (availableRow) {
         availableRow.busy = 1;
         availableRow.op = lastInstruction.instruction;
+        availableRow.latency = getLatency(lastInstruction.instruction);
+        availableRow.instructionId = lastInstruction.id; // Pass unique ID
 
         const setRegisterValues = (register, value, vField, qField) => {
           if (register.startsWith('R')) {
@@ -285,6 +338,8 @@ export default function SimulationPage({ everything }) {
       if (availableRow) {
         availableRow.busy = 1;
         availableRow.address = lastInstruction.j;
+        availableRow.latency = getLatency(lastInstruction.instruction);
+        availableRow.instructionId = lastInstruction.id; // Pass unique ID
 
         if (lastInstruction.dest.startsWith('R')) {
           const regIndex = parseInt(lastInstruction.dest.slice(1));
@@ -314,6 +369,8 @@ export default function SimulationPage({ everything }) {
       if (availableRow) {
         availableRow.busy = 1;
         availableRow.address = lastInstruction.j;
+        availableRow.latency = getLatency(lastInstruction.instruction);
+        availableRow.instructionId = lastInstruction.id; // Pass unique ID
 
         const destRegister = lastInstruction.dest;
         if (destRegister.startsWith('R')) {
@@ -352,6 +409,8 @@ export default function SimulationPage({ everything }) {
       if (availableRow) {
         availableRow.busy = 1;
         availableRow.op = lastInstruction.instruction;
+        availableRow.latency = getLatency(lastInstruction.instruction);
+        availableRow.instructionId = lastInstruction.id; // Pass unique ID
 
         const setRegisterValues = (register, value, vField, qField) => {
           if (register.startsWith('R')) {
@@ -394,24 +453,52 @@ export default function SimulationPage({ everything }) {
     }
   };
 
+  const execute = () => {
+    const updateExecutionStart = (stationArray, setStationArray, stationName) => {
+      const updatedStationArray = stationArray.map(row => {
+        if (row.busy === 1 && row.vj !== '' && row.vk !== '') {
+          const instruction = shownInstructions.find(instr => instr.id === row.instructionId);
+          if (instruction && row.latency === getLatency(instruction.instruction)) {
+            instruction.executionStart = cycle;
+            setShownInstructions([...shownInstructions]);
+          }
+          row.latency -= 1;
+        }
+        return row;
+      });
+      setStationArray(updatedStationArray);
+      console.log(`${stationName} Array:`, updatedStationArray);
+    };
+  
+    updateExecutionStart(additionStationArray, setAdditionStationArray, 'Addition Station');
+    updateExecutionStart(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
+    updateExecutionStart(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
+    updateExecutionStart(loadBufferArray, setLoadBufferArray, 'Load Buffer');
+    updateExecutionStart(storeBufferArray, setStoreBufferArray, 'Store Buffer');
+  };
+  
   useEffect(() => {
     // Logic to handle cycle increment
     const lastInstruction = shownInstructions[shownInstructions.length - 1];
     const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction?.instruction);
     if (lastInstruction) {
-      console.log(lastInstruction.issue);
       if (!(isBranchInstruction && lastInstruction.executionEnd == null && lastInstruction.issue == null)) {
         if (!(instructions.length === shownInstructions.length && shownInstructions[shownInstructions.length - 1]?.issue != null)) {
           issue();
         }
       }
     }
+    // execute(); // Call execute method after issue function
+    console.log('Addition Station Array:', additionStationArray);
+    console.log('Multiplication Station Array:', multiplicationStationArray);
+    console.log('Branch Buffer Array:', branchBufferArray);
+    console.log('Load Buffer Array:', loadBufferArray);
+    console.log('Store Buffer Array:', storeBufferArray);
   }, [cycle]);
 
   return (
     <div className="container mx-auto p-4 space-y-8">
       <h1 className="text-2xl font-bold">MIPS Simulation</h1>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="md:col-span-1">
             <InstructionStatusTable instructions={shownInstructions} />
@@ -421,7 +508,6 @@ export default function SimulationPage({ everything }) {
           <Memory memoryValues={memoryValues} />
         </div>
       </div>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-4">
           <ReservationStations title="Addition Reservation Station" size={addStation} rows={additionStationArray} />
@@ -430,7 +516,6 @@ export default function SimulationPage({ everything }) {
           <BufferTable title="Load Buffer" size={loadBuffer} rows={loadBufferArray} showVQ={false} />
           <BufferTable title="Store Buffer" size={storeBuffer} rows={storeBufferArray} />
         </div>
-        
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <RegisterFile title="Integer Registers" registers={integerRegistersArray} />
@@ -438,7 +523,6 @@ export default function SimulationPage({ everything }) {
           </div>
         </div>
       </div>
-
       <div className="fixed bottom-4 right-4 bg-white border rounded-lg shadow-lg p-4">
         <div className="text-2xl font-mono">
           Clock: <span className="font-bold">{cycle}</span>
