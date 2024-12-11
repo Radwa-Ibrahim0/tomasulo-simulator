@@ -7,6 +7,10 @@ import Cache from './Cache';
 import Memory from './Memory';
 
 export default function SimulationPage({ everything }) {
+  // Global variables for hit rate and miss penalty
+  const hitRate = everything.find(item => item.key === 'hitTime')?.value || 0;
+  const missPenalty = everything.find(item => item.key === 'missPenalty')?.value || 0;
+
   const [cycle, setCycle] = useState(0); // Initialize clock cycle to start from 0
   const [instructions, setInstructions] = useState([]); // State for processed instructions
   const [originalInstructions, setOriginalInstructions] = useState([]); // State for original instructions
@@ -27,6 +31,10 @@ export default function SimulationPage({ everything }) {
   const [loadBufferArray, setLoadBufferArray] = useState([]);
   const [storeBufferArray, setStoreBufferArray] = useState([]);
   const [shownInstructions, setShownInstructions] = useState([]); // New state for shown instructions
+  const [cacheArray, setCacheArray] = useState([]);
+  const [memoryArray, setMemoryArray] = useState([]);
+  const [firstTimeCache, setFirstTimeCache] = useState(false);
+  
 
   useEffect(() => {
     // Initialize instructions and other states from 'everything'
@@ -114,6 +122,23 @@ export default function SimulationPage({ everything }) {
       .map(reg => ({ ...reg, value: reg.value === '' ? 0 : reg.value }));
     setFloatRegistersArray(initialFloatRegistersArray);
 
+    const cacheSize = everything.find(item => item.key === 'cacheSize')?.value || 0;
+    const blockSize = everything.find(item => item.key === 'cacheBlockSize')?.value || 0;
+    const numBlocks = Math.floor(cacheSize / blockSize);
+    const rowsPerBlock = Math.floor(blockSize / 8);
+    const initialCacheArray = Array.from({ length: numBlocks }, (_, i) => ({
+      blockNumber: `B${i + 1}`,
+      addresses: Array.from({ length: rowsPerBlock }, () => ({
+        address: '',
+        value: ''
+      }))
+    }));
+    setCacheArray(initialCacheArray);
+
+    const initialMemoryArray = everything.filter(item => item.type === 'memory')
+      .sort((a, b) => a.address - b.address);
+    setMemoryArray(initialMemoryArray);
+
     // Initialize other states as needed
     // console.log(initialAdditionStationArray);
     // console.log(initialMultiplicationStationArray);
@@ -123,10 +148,57 @@ export default function SimulationPage({ everything }) {
     // console.log(initialIntegerRegistersArray);
     // console.log(initialFloatRegistersArray);
     // console.log(splitInstructions); // Log instructions after initialization
+    console.log(initialCacheArray); 
+    console.log(initialMemoryArray);
   }, [everything]);
+
+  const isCacheEmpty = () => {
+    return cacheArray.every(block => block.addresses.every(address => address.value === ''));
+  };
+
+  const checkCache = (startAddress, blockSize) => {
+    const updatedCacheArray = cacheArray.map((block) => {
+      if (block.blockNumber === 'B1') {
+        const memoryBlock = memoryArray.filter(mem => 
+          mem.address >= startAddress && mem.address < startAddress + blockSize
+        );
+        return {
+          ...block,
+          addresses: block.addresses.map((address, addressIndex) => {
+            const memAddress = startAddress + addressIndex;
+            const memoryValue = memoryBlock.find(mem => mem.address === memAddress)?.value || 0;
+            return {
+              ...address,
+              address: memAddress,
+              value: memoryValue
+            };
+          })
+        };
+      }
+      return block;
+    });
+    setCacheArray(updatedCacheArray);
+  };
 
   const incrementCycle = () => {
     setCycle(cycle + 1);
+    if(cycle > 0){
+    execute(); 
+      const lastInstruction = shownInstructions[shownInstructions.length - 1];
+      const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction?.instruction);
+      if (lastInstruction) {
+        if (!(isBranchInstruction && lastInstruction.executionEnd == null && lastInstruction.issue == null)) {
+          // if (!(instructions.length === shownInstructions.length && shownInstructions[shownInstructions.length - 1]?.issue != null)) {
+      issue();
+        }
+      }
+    }
+    //add console.log for all my reservation stations
+    console.log("Add",additionStationArray);
+    console.log(multiplicationStationArray);
+    console.log(branchBufferArray);
+    console.log("Load",loadBufferArray);
+    console.log(storeBufferArray);
   };
 
   useEffect(() => {
@@ -194,11 +266,11 @@ export default function SimulationPage({ everything }) {
         return everything.find(item => item.key === 'subi')?.value || 0;
       case 'LD':
       case 'LW':
-        return everything.find(item => item.key === 'loadWord')?.value || 0;
+        return everything.find(item => item.key === 'loadWord')?.value + hitRate|| 0;
       case 'L.D':
-        return everything.find(item => item.key === 'loadDouble')?.value || 0;
+        return everything.find(item => item.key === 'loadDouble')?.value + hitRate|| 0;
       case 'L.S':
-        return everything.find(item => item.key === 'loadSingle')?.value || 0;
+        return everything.find(item => item.key === 'loadSingle')?.value + hitRate|| 0;
       case 'SD':
       case 'SW':
         return everything.find(item => item.key === 'storeWord')?.value || 0;
@@ -451,6 +523,7 @@ export default function SimulationPage({ everything }) {
         }
       }
     }
+    
   };
 
   const execute = () => {
@@ -467,35 +540,40 @@ export default function SimulationPage({ everything }) {
         return row;
       });
       setStationArray(updatedStationArray);
-      console.log(`${stationName} Array:`, updatedStationArray);
+    };
+
+    const updateExecutionStartLoad = (stationArray, setStationArray, stationName) => {
+      const updatedStationArray = stationArray.map(row => {
+        if (row.busy === 1) {
+          const instruction = shownInstructions.find(instr => instr.id === row.instructionId);
+          if (instruction && row.latency === getLatency(instruction.instruction) && !firstTimeCache) {
+            instruction.executionStart = cycle;
+            setShownInstructions([...shownInstructions]);
+            if(isCacheEmpty()){
+              // Add miss penalty and cache hit
+              row.latency += missPenalty;
+              setFirstTimeCache(true);
+            }
+          }
+          if(row.latency === 1){
+            checkCache(parseInt(row.address), blockSize);
+          }
+          row.latency -= 1;
+
+      }
+        return row;
+      });
+      setStationArray(updatedStationArray);
     };
   
     updateExecutionStart(additionStationArray, setAdditionStationArray, 'Addition Station');
     updateExecutionStart(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
     updateExecutionStart(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
-    updateExecutionStart(loadBufferArray, setLoadBufferArray, 'Load Buffer');
-    updateExecutionStart(storeBufferArray, setStoreBufferArray, 'Store Buffer');
+    updateExecutionStartLoad(loadBufferArray, setLoadBufferArray, 'Load Buffer');
+    // updateExecutionStartLoad(storeBufferArray, setStoreBufferArray, 'Store Buffer');
+    
   };
   
-  useEffect(() => {
-    // Logic to handle cycle increment
-    const lastInstruction = shownInstructions[shownInstructions.length - 1];
-    const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction?.instruction);
-    if (lastInstruction) {
-      if (!(isBranchInstruction && lastInstruction.executionEnd == null && lastInstruction.issue == null)) {
-        if (!(instructions.length === shownInstructions.length && shownInstructions[shownInstructions.length - 1]?.issue != null)) {
-          issue();
-        }
-      }
-    }
-    // execute(); // Call execute method after issue function
-    console.log('Addition Station Array:', additionStationArray);
-    console.log('Multiplication Station Array:', multiplicationStationArray);
-    console.log('Branch Buffer Array:', branchBufferArray);
-    console.log('Load Buffer Array:', loadBufferArray);
-    console.log('Store Buffer Array:', storeBufferArray);
-  }, [cycle]);
-
   return (
     <div className="container mx-auto p-4 space-y-8">
       <h1 className="text-2xl font-bold">MIPS Simulation</h1>
@@ -504,8 +582,8 @@ export default function SimulationPage({ everything }) {
             <InstructionStatusTable instructions={shownInstructions} />
         </div>
         <div className="md:col-span-1 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Cache cacheSize={cacheSize} blockSize={blockSize} />
-          <Memory memoryValues={memoryValues} />
+          <Cache cacheArray={cacheArray} />
+          <Memory memoryArray={memoryArray} />
         </div>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

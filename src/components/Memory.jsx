@@ -9,9 +9,7 @@ import {
 } from "./ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
-const Memory = ({ memoryValues }) => {
-  const sortedMemoryValues = memoryValues.sort((a, b) => a.address - b.address);
-
+const Memory = ({ memoryArray }) => {
   return (
     <Card>
       <CardHeader>
@@ -26,7 +24,7 @@ const Memory = ({ memoryValues }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {sortedMemoryValues.map((mem, index) => (
+            {memoryArray.map((mem, index) => (
               <TableRow key={index}>
                 <TableCell>{mem.address}</TableCell>
                 <TableCell>{mem.value}</TableCell>

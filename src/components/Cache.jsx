@@ -9,17 +9,7 @@ import {
 } from "./ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
 
-const Cache = ({ cacheSize, blockSize }) => {
-  const numBlocks = Math.floor(cacheSize / blockSize);
-  const rowsPerBlock = Math.floor(blockSize / 8);
-  const cacheBlocks = Array.from({ length: numBlocks }, (_, i) => ({
-    blockNumber: `B${i + 1}`,
-    addresses: Array.from({ length: rowsPerBlock }, () => ({
-      address: '',
-      value: ''
-    }))
-  }));
-
+const Cache = ({ cacheArray }) => {
   return (
     <Card>
       <CardHeader>
@@ -35,12 +25,12 @@ const Cache = ({ cacheSize, blockSize }) => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {cacheBlocks.map(block => (
+            {cacheArray.map(block => (
               <React.Fragment key={block.blockNumber}>
                 {block.addresses.map((addr, index) => (
                   <TableRow key={index}>
                     {index === 0 && (
-                      <TableCell rowSpan={rowsPerBlock} className="text-center">
+                      <TableCell rowSpan={block.addresses.length} className="text-center">
                         {block.blockNumber}
                       </TableCell>
                     )}
