@@ -26,7 +26,7 @@ export default function InstructionStatusTable({ instructions }) {
               <TableHead>Execution Start</TableHead>
               <TableHead>Execution End</TableHead>
 
-              <TableHead>Write Result</TableHead>
+              <TableHead>Write Back</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>

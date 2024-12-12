@@ -641,9 +641,13 @@ export default function SimulationPage({ everything }) {
   };
   
   const writeback = () => {
+  let writebackDone = false; // Define writebackDone outside the function
+
   const processWriteback = (stationArray, setStationArray, stationName) => {
     const updatedStationArray = stationArray.map(row => {
-      if (row.busy === 1 && row.latency === -1) {
+      if (writebackDone) return row; // Skip further processing if writeback is done
+
+      if (row.busy === 1 && row.latency <= -1) {
         let result;
         if (stationName === 'Addition Station') {
           if (row.op.startsWith('ADD')) {
@@ -652,7 +656,27 @@ export default function SimulationPage({ everything }) {
             result = parseFloat(row.vj) - parseFloat(row.vk);
           }
         }
-        // Similar logic for other station types...
+
+        if (stationName === 'Multiplication Station') {
+          if (row.op.startsWith('MUL')) {
+            result = parseFloat(row.vj) * parseFloat(row.vk);
+          } else if (row.op.startsWith('DIV')) {
+            result = parseFloat(row.vj) / parseFloat(row.vk);
+          }
+        }
+        
+        if (stationName === 'Load Buffer') {
+          const cacheBlock = cacheArray.find(block => block.blockNumber === 'B1');
+          const cacheRow = cacheBlock.addresses.find(address => address.address === parseInt(row.address));
+          result = cacheRow.value;
+        }
+
+        if (stationName === 'Store Buffer') {
+          const cacheBlock = cacheArray.find(block => block.blockNumber === 'B1');
+          const cacheRow = cacheBlock.addresses.find(address => address.address === parseInt(row.address));
+          cacheRow.value = row.v;
+          console.log('Cache Block:', cacheBlock);
+        }
 
         console.log(`${stationName} result:`, result);
 
@@ -693,6 +717,14 @@ export default function SimulationPage({ everything }) {
 
         updateReservationStations([additionStationArray, multiplicationStationArray, branchBufferArray, loadBufferArray, storeBufferArray]);
 
+        // Directly update the writeResult field of the shownInstructions array
+        const instructionToUpdate = shownInstructions.find(instr => instr.id === row.instructionId);
+        if (instructionToUpdate) {
+          instructionToUpdate.writeResult = cycle;
+        }
+
+        writebackDone = true; // Set flag to true after one writeback
+
         // Mark the row as not busy
         row.busy = 0;
         row.op = '';
@@ -701,7 +733,7 @@ export default function SimulationPage({ everything }) {
         row.qj = '';
         row.qk = '';
         row.latency = '';
-        row.instructionId = '';        
+        row.instructionId = '';
       }
       return row;
     });
@@ -709,10 +741,10 @@ export default function SimulationPage({ everything }) {
   };
 
   processWriteback(additionStationArray, setAdditionStationArray, 'Addition Station');
-  processWriteback(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
-  processWriteback(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
-  processWriteback(loadBufferArray, setLoadBufferArray, 'Load Buffer');
-  processWriteback(storeBufferArray, setStoreBufferArray, 'Store Buffer');
+  if (!writebackDone) processWriteback(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
+  if (!writebackDone) processWriteback(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
+  if (!writebackDone) processWriteback(loadBufferArray, setLoadBufferArray, 'Load Buffer');
+  if (!writebackDone) processWriteback(storeBufferArray, setStoreBufferArray, 'Store Buffer');
 
   console.log('Updated Integer Registers:', integerRegistersArray);
   console.log('Updated Float Registers:', floatRegistersArray);

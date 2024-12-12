@@ -45,7 +45,8 @@ const InstructionInput = ({ everything, setEverything }) => {
       addi: 1, subi: 1,
       loadWord: 1, loadDouble: 1, loadSingle: 1,
       storeWord: 1, storeDouble: 1, storeSingle: 1,
-      beq: 1, bne: 1
+      beq: 1, bne: 1,
+      daddi: 1, dsubi: 1, addS: 1, subS: 1, mulS: 1, divS: 1 
     },
     stations: {
       mulStation: 2, 
@@ -70,7 +71,8 @@ const InstructionInput = ({ everything, setEverything }) => {
     "ADDI", "SUBI",
     "LW", "LD", "L.S", "L.D",
     "SW", "SD", "S.S", "S.D",
-    "BEQ", "BNE"
+    "BEQ", "BNE",
+    "DADDI", "DSUBI", "ADD.S", "SUB.S", "MUL.S", "DIV.S" // new operations
   ].filter(op => !['BEQ', 'BNE'].includes(op) || labels.length > 0);
 
   const generateRegisters = (prefix, count) => {
@@ -82,11 +84,11 @@ const InstructionInput = ({ everything, setEverything }) => {
 
     if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || !currentInstruction.registers[1] || !currentInstruction.immediate;
-    } else if (['ADDI', 'SUBI'].includes(currentInstruction.operation)) {
+    } else if (['ADDI', 'SUBI','DADDI','DSUBI'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || !currentInstruction.registers[1] || currentInstruction.immediate === '';
     } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || currentInstruction.immediate === '';
-    } else if (['ADD.D', 'SUB.D', 'MUL.D', 'DIV.D'].includes(currentInstruction.operation)) {
+    } else if (['ADD.D', 'SUB.D', 'MUL.D', 'DIV.D','ADD.S','SUB.S', 'MUL.S', 'DIV.S'].includes(currentInstruction.operation)) {
       return currentInstruction.registers.slice(0, 3).some(reg => !reg);
     } else {
       return currentInstruction.registers.slice(0, 2).some(reg => !reg);
@@ -136,7 +138,7 @@ const InstructionInput = ({ everything, setEverything }) => {
 
       if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
-      } else if (['ADDI', 'SUBI'].includes(currentInstruction.operation)) {
+      } else if (['ADDI', 'SUBI', 'DADDI', 'DSUBI'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
       } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.immediate}`;
