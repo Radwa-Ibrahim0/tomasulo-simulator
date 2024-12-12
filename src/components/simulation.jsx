@@ -41,9 +41,9 @@ export default function SimulationPage({ everything }) {
   useEffect(() => {
     // Initialize instructions and other states from 'everything'
     const initialInstructions = everything.filter(item => item.type === 'instruction');
-    console.log(initialInstructions); // Log instructions before initialization 
+    // console.log(initialInstructions); // Log instructions before initialization 
     const splitInstructions = preprocessInstructions(initialInstructions);
-    console.log(splitInstructions); // Log instructions after initialization
+    // console.log(splitInstructions); // Log instructions after initialization
     setInstructions(splitInstructions);
     setOriginalInstructions(splitInstructions);
     setShownInstructions(splitInstructions.slice(0, 1)); // Set the first instruction initially
@@ -152,8 +152,8 @@ export default function SimulationPage({ everything }) {
     // console.log(initialIntegerRegistersArray);
     // console.log(initialFloatRegistersArray);
     // console.log(splitInstructions); // Log instructions after initialization
-    console.log(initialCacheArray); 
-    console.log(initialMemoryArray);
+    // console.log(initialCacheArray); 
+    // console.log(initialMemoryArray);
   }, [everything]);
 
   const isCacheEmpty = () => {
@@ -199,11 +199,11 @@ export default function SimulationPage({ everything }) {
       }
     }
     //add console.log for all my reservation stations
-    console.log("Add",additionStationArray);
-    console.log(multiplicationStationArray);
-    console.log(branchBufferArray);
-    console.log("Load",loadBufferArray);
-    console.log(storeBufferArray);
+    // console.log("Add",additionStationArray);
+    // console.log(multiplicationStationArray);
+    // console.log(branchBufferArray);
+    // console.log("Load",loadBufferArray);
+    // console.log(storeBufferArray);
   };
 
   useEffect(() => {
@@ -261,28 +261,38 @@ export default function SimulationPage({ everything }) {
     
       case 'ADD.D':
         return everything.find(item => item.key === 'addD')?.value || 0;
+      case 'ADD.S':
+        return everything.find(item => item.key === 'addS')?.value || 0;  
       case 'SUB.D':
         return everything.find(item => item.key === 'subD')?.value || 0;
+      case 'SUB.S':
+        return everything.find(item => item.key === 'subS')?.value || 0;  
       case 'MUL.D':
         return everything.find(item => item.key === 'mulD')?.value || 0;
+      case 'MUL.S':
+        return everything.find(item => item.key === 'mulS')?.value || 0;
       case 'DIV.D':
         return everything.find(item => item.key === 'divD')?.value || 0;
-      case 'ADDI':
-        return everything.find(item => item.key === 'addi')?.value || 0;
-      case 'SUBI':
-        return everything.find(item => item.key === 'subi')?.value || 0;
+      case 'DIV.S':
+        return everything.find(item => item.key === 'divS')?.value || 0;
+      case 'DADDI':
+        return everything.find(item => item.key === 'daddi')?.value || 0;
+      case 'DSUBI':
+        return everything.find(item => item.key === 'dsubi')?.value || 0;
       case 'LD':
+        return everything.find(item => item.key === 'loadDouble')?.value || 0;
       case 'LW':
         return everything.find(item => item.key === 'loadWord')?.value || 0;
       case 'L.D':
-        return everything.find(item => item.key === 'loadDouble')?.value|| 0;
+        return everything.find(item => item.key === 'loadDfloat')?.value|| 0;
       case 'L.S':
         return everything.find(item => item.key === 'loadSingle')?.value || 0;
       case 'SD':
+        return everything.find(item => item.key === 'storeDouble')?.value || 0;
       case 'SW':
         return everything.find(item => item.key === 'storeWord')?.value || 0;
       case 'S.D':
-        return everything.find(item => item.key === 'storeDouble')?.value || 0;
+        return everything.find(item => item.key === 'storeDfloat')?.value || 0;
       case 'S.S':
         return everything.find(item => item.key === 'storeSingle')?.value || 0;
       case 'BEQ':
@@ -298,8 +308,8 @@ export default function SimulationPage({ everything }) {
     const lastInstruction = shownInstructions[shownInstructions.length - 1];
     if (!lastInstruction || lastInstruction.issue) return; // Check if the instruction already has an issue value
 
-    const isAdditionInstruction = ['ADDI', 'SUBI', 'ADD.D', 'SUB.D'].includes(lastInstruction.instruction);
-    const isMultiplicationInstruction = ['MUL.D', 'DIV.D', 'MUL', 'DIV'].includes(lastInstruction.instruction);
+    const isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(lastInstruction.instruction);
+    const isMultiplicationInstruction = ['MUL.D', 'DIV.D','MUL.S','DIV.S'].includes(lastInstruction.instruction);
     const isLoadInstruction = ['LD', 'LW', 'L.D', 'L.S'].includes(lastInstruction.instruction);
     const isStoreInstruction = ['SD', 'SW', 'S.D', 'S.S'].includes(lastInstruction.instruction);
     const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction.instruction);
@@ -558,27 +568,27 @@ export default function SimulationPage({ everything }) {
           if (instruction && row.latency === getLatency(instruction.instruction) && !firstTimeCache) {
             instruction.executionStart = cycle;
             setShownInstructions([...shownInstructions]);
+            
             if(isCacheEmpty()){
+              checkCache(parseInt(row.address), blockSize);
               row.latency += missPenalty-1;
               setFirstTimeCache(true);
               setloadid(row.id);
-
-            }
-            else{
-              row.latency += hitRate;
             }
           }
           if(row.latency === 1 && loadid===row.id  ){
-            checkCache(parseInt(row.address), blockSize);
             setfirstloadend(true);
           }
           if(row.latency===0 && firstloadend ){
-            instruction.executionEnd=cycle;  
-          console.log("el end bta3 both ", row.latency);        }
-          if (loadid!== row.id && firstloadend && instruction.executionStart===''){
-          console.log("executio start awel wahda el latency b t3ha", row.latency);
+            instruction.executionEnd=cycle;        
+          }
+          if (firstloadend && instruction.executionStart===''){
+           console.log("executio start awel ", row.latency, instruction);
+            row.latency += hitRate;
             instruction.executionStart=cycle;
           }
+          
+
         if(loadid===row.id ){
           row.latency -= 1;
         }
@@ -599,24 +609,22 @@ export default function SimulationPage({ everything }) {
               instruction.executionStart = cycle;
               setShownInstructions([...shownInstructions]);
               if(isCacheEmpty()){
+                checkCache(parseInt(row.address), blockSize);
                 row.latency += missPenalty-1;
                 setFirstTimeCache(true);
                 setloadid(row.id);
-  
-              }
-              else{
-                row.latency += hitRate;
               }
             }
             if(row.latency === 1 && loadid===row.id  ){
-              checkCache(parseInt(row.address), blockSize);
               setfirstloadend(true);
             }
             if(row.latency===0 && firstloadend ){
               instruction.executionEnd=cycle;  
-            console.log("el end bta3 both ", row.latency);        }
-            if (loadid!== row.id && firstloadend && instruction.executionStart===''){
-            console.log("executio start awel wahda el latency b t3ha", row.latency);
+            // console.log("el end bta3 both ", row.latency);        
+            }
+            if (firstloadend && instruction.executionStart===''){
+            // console.log("executio start awel wahda el latency b t3ha", row.latency);
+              row.latency += hitRate;
               instruction.executionStart=cycle;
             }
           if(loadid===row.id ){
@@ -650,9 +658,9 @@ export default function SimulationPage({ everything }) {
       if (row.busy === 1 && row.latency <= -1) {
         let result;
         if (stationName === 'Addition Station') {
-          if (row.op.startsWith('ADD')) {
+          if (row.op.startsWith('ADD') || row.op.startsWith('DADD')) {
             result = parseFloat(row.vj) + parseFloat(row.vk);
-          } else if (row.op.startsWith('SUB')) {
+          } else if (row.op.startsWith('SUB') || row.op.startsWith('DSUB')){
             result = parseFloat(row.vj) - parseFloat(row.vk);
           }
         }
@@ -675,17 +683,17 @@ export default function SimulationPage({ everything }) {
           const cacheBlock = cacheArray.find(block => block.blockNumber === 'B1');
           const cacheRow = cacheBlock.addresses.find(address => address.address === parseInt(row.address));
           cacheRow.value = row.v;
-          console.log('Cache Block:', cacheBlock);
+          // console.log('Cache Block:', cacheBlock);
         }
 
-        console.log(`${stationName} result:`, result);
+        // console.log(`${stationName} result:`, result);
 
         // Directly update the register files
         const updateRegisterFile = (registerArray, setRegisterArray) => {
           const updatedArray = [...registerArray];
           for (let i = 0; i < updatedArray.length; i++) {
             if (updatedArray[i].value === row.id) {
-              console.log(`Updating register ${updatedArray[i].index} with value ${result}`);
+              // console.log(`Updating register ${updatedArray[i].index} with value ${result}`);
               updatedArray[i].value = result;
             }
           }
@@ -725,9 +733,11 @@ export default function SimulationPage({ everything }) {
 
         writebackDone = true; // Set flag to true after one writeback
 
-        // Mark the row as not busy
         row.busy = 0;
         row.op = '';
+        row.v='';
+        row.q='';
+        row.address='';
         row.vj = '';
         row.vk = '';
         row.qj = '';
@@ -746,8 +756,8 @@ export default function SimulationPage({ everything }) {
   if (!writebackDone) processWriteback(loadBufferArray, setLoadBufferArray, 'Load Buffer');
   if (!writebackDone) processWriteback(storeBufferArray, setStoreBufferArray, 'Store Buffer');
 
-  console.log('Updated Integer Registers:', integerRegistersArray);
-  console.log('Updated Float Registers:', floatRegistersArray);
+  // console.log('Updated Integer Registers:', integerRegistersArray);
+  // console.log('Updated Float Registers:', floatRegistersArray);
 };
 
   return (

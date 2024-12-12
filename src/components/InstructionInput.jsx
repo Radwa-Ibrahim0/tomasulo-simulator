@@ -42,11 +42,10 @@ const InstructionInput = ({ everything, setEverything }) => {
     memorySize: 2048,
     latencies: {
       addD: 1, subD: 1, mulD: 1, divD: 1,
-      addi: 1, subi: 1,
-      loadWord: 1, loadDouble: 1, loadSingle: 1,
-      storeWord: 1, storeDouble: 1, storeSingle: 1,
-      beq: 1, bne: 1,
-      daddi: 1, dsubi: 1, addS: 1, subS: 1, mulS: 1, divS: 1 
+      daddi: 1, dsubi: 1,
+      loadWord: 1, loadDouble: 1, loadSingle: 1, loadDfloat:1,
+      storeWord: 1, storeDouble: 1, storeSingle: 1,storeDfloat:1,
+      beq: 1, bne: 1, addS: 1, subS: 1, mulS: 1, divS: 1 
     },
     stations: {
       mulStation: 2, 
@@ -68,7 +67,6 @@ const InstructionInput = ({ everything, setEverything }) => {
 
   const operations = [
     "ADD.D", "SUB.D", "MUL.D", "DIV.D",
-    "ADDI", "SUBI",
     "LW", "LD", "L.S", "L.D",
     "SW", "SD", "S.S", "S.D",
     "BEQ", "BNE",
@@ -84,7 +82,7 @@ const InstructionInput = ({ everything, setEverything }) => {
 
     if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || !currentInstruction.registers[1] || !currentInstruction.immediate;
-    } else if (['ADDI', 'SUBI','DADDI','DSUBI'].includes(currentInstruction.operation)) {
+    } else if (['DADDI', 'DSUBI'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || !currentInstruction.registers[1] || currentInstruction.immediate === '';
     } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
       return !currentInstruction.registers[0] || currentInstruction.immediate === '';
@@ -138,7 +136,7 @@ const InstructionInput = ({ everything, setEverything }) => {
 
       if (['BEQ', 'BNE'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
-      } else if (['ADDI', 'SUBI', 'DADDI', 'DSUBI'].includes(currentInstruction.operation)) {
+      } else if (['DADDI', 'DSUBI'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.registers[1]}, ${currentInstruction.immediate}`;
       } else if (['LW', 'LD', 'SW', 'SD', 'L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation)) {
         content += ` ${currentInstruction.registers[0]}, ${currentInstruction.immediate}`;
@@ -371,7 +369,7 @@ const InstructionInput = ({ everything, setEverything }) => {
                           </Select>
                         </div>
                       </>
-                    ) : ['ADDI', 'SUBI'].includes(currentInstruction.operation) ? (
+                    ) : ['DADDI', 'DSUBI'].includes(currentInstruction.operation) ? (
                       <>
                         <div>
                           <Label>Register 1</Label>
