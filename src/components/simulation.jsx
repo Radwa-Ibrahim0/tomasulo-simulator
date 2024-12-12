@@ -34,6 +34,8 @@ export default function SimulationPage({ everything }) {
   const [cacheArray, setCacheArray] = useState([]);
   const [memoryArray, setMemoryArray] = useState([]);
   const [firstTimeCache, setFirstTimeCache] = useState(false);
+  const [firstloadend, setfirstloadend] = useState(false);
+  const [loadid,setloadid]=useState(0);
   
 
   useEffect(() => {
@@ -251,7 +253,9 @@ export default function SimulationPage({ everything }) {
   };
 
   const getLatency = (instruction) => {
+    
     switch (instruction) {
+    
       case 'ADD.D':
         return everything.find(item => item.key === 'addD')?.value || 0;
       case 'SUB.D':
@@ -266,11 +270,11 @@ export default function SimulationPage({ everything }) {
         return everything.find(item => item.key === 'subi')?.value || 0;
       case 'LD':
       case 'LW':
-        return everything.find(item => item.key === 'loadWord')?.value + hitRate|| 0;
+        return everything.find(item => item.key === 'loadWord')?.value || 0;
       case 'L.D':
-        return everything.find(item => item.key === 'loadDouble')?.value + hitRate|| 0;
+        return everything.find(item => item.key === 'loadDouble')?.value|| 0;
       case 'L.S':
-        return everything.find(item => item.key === 'loadSingle')?.value + hitRate|| 0;
+        return everything.find(item => item.key === 'loadSingle')?.value || 0;
       case 'SD':
       case 'SW':
         return everything.find(item => item.key === 'storeWord')?.value || 0;
@@ -546,25 +550,56 @@ export default function SimulationPage({ everything }) {
       const updatedStationArray = stationArray.map(row => {
         if (row.busy === 1) {
           const instruction = shownInstructions.find(instr => instr.id === row.instructionId);
+          console.log("instructinkcndifvoernve",instruction);
           if (instruction && row.latency === getLatency(instruction.instruction) && !firstTimeCache) {
             instruction.executionStart = cycle;
             setShownInstructions([...shownInstructions]);
             if(isCacheEmpty()){
               // Add miss penalty and cache hit
-              row.latency += missPenalty;
+              console.log("latency abl el pen weh dah el gded yaany",getLatency(instruction.instruction));
+              console.log("latency el row abl el penalty",row.latency);
+              console.log("miss pennnnnn",missPenalty);
+              row.latency += missPenalty-1;
+            
+              console.log("latency el awalenay",row.latency);
               setFirstTimeCache(true);
+              setloadid(row.id);
+
             }
           }
-          if(row.latency === 1){
+         
+          if(row.latency === 1 && loadid===row.id  ){
             checkCache(parseInt(row.address), blockSize);
+            setfirstloadend(true);
+
           }
+          if(row.latency===0 && firstloadend ){
+            instruction.executionEnd=cycle;  
+          console.log("el end bta3 both ", row.latency);        }
+          if (loadid!== row.id && firstloadend && instruction.executionStart===''){
+          console.log("executio start awel wahda el latency b t3ha", row.latency);
+            instruction.executionStart=cycle;
+          }
+        if(loadid===row.id ){
           row.latency -= 1;
+        }
+        if(loadid!==row.id && firstloadend){
+          row.latency -= 1;
+        }
+       
+       
+           
 
       }
         return row;
       });
       setStationArray(updatedStationArray);
     };
+
+
+ 
+
+
   
     updateExecutionStart(additionStationArray, setAdditionStationArray, 'Addition Station');
     updateExecutionStart(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
