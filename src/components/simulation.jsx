@@ -539,6 +539,8 @@ export default function SimulationPage({ everything }) {
             instruction.executionStart = cycle;
             setShownInstructions([...shownInstructions]);
           }
+          if(row.latency===0 )
+            instruction.executionEnd=cycle; 
           row.latency -= 1;
         }
         return row;
@@ -550,28 +552,19 @@ export default function SimulationPage({ everything }) {
       const updatedStationArray = stationArray.map(row => {
         if (row.busy === 1) {
           const instruction = shownInstructions.find(instr => instr.id === row.instructionId);
-          console.log("instructinkcndifvoernve",instruction);
           if (instruction && row.latency === getLatency(instruction.instruction) && !firstTimeCache) {
             instruction.executionStart = cycle;
             setShownInstructions([...shownInstructions]);
             if(isCacheEmpty()){
-              // Add miss penalty and cache hit
-              console.log("latency abl el pen weh dah el gded yaany",getLatency(instruction.instruction));
-              console.log("latency el row abl el penalty",row.latency);
-              console.log("miss pennnnnn",missPenalty);
               row.latency += missPenalty-1;
-            
-              console.log("latency el awalenay",row.latency);
               setFirstTimeCache(true);
               setloadid(row.id);
 
             }
           }
-         
           if(row.latency === 1 && loadid===row.id  ){
             checkCache(parseInt(row.address), blockSize);
             setfirstloadend(true);
-
           }
           if(row.latency===0 && firstloadend ){
             instruction.executionEnd=cycle;  
@@ -586,26 +579,55 @@ export default function SimulationPage({ everything }) {
         if(loadid!==row.id && firstloadend){
           row.latency -= 1;
         }
-       
-       
-           
-
       }
         return row;
       });
       setStationArray(updatedStationArray);
     };
 
-
- 
-
-
+    const updateExecutionStartStore = (stationArray, setStationArray, stationName) => {
+        const updatedStationArray = stationArray.map(row => {
+          if (row.busy === 1 && row.v !== '' ) {
+            const instruction = shownInstructions.find(instr => instr.id === row.instructionId);
+            if (instruction && row.latency === getLatency(instruction.instruction) && !firstTimeCache) {
+              instruction.executionStart = cycle;
+              setShownInstructions([...shownInstructions]);
+              if(isCacheEmpty()){
+                row.latency += missPenalty-1;
+                setFirstTimeCache(true);
+                setloadid(row.id);
   
+              }
+            }
+            if(row.latency === 1 && loadid===row.id  ){
+              checkCache(parseInt(row.address), blockSize);
+              setfirstloadend(true);
+            }
+            if(row.latency===0 && firstloadend ){
+              instruction.executionEnd=cycle;  
+            console.log("el end bta3 both ", row.latency);        }
+            if (loadid!== row.id && firstloadend && instruction.executionStart===''){
+            console.log("executio start awel wahda el latency b t3ha", row.latency);
+              instruction.executionStart=cycle;
+            }
+          if(loadid===row.id ){
+            row.latency -= 1;
+          }
+          if(loadid!==row.id && firstloadend){
+            row.latency -= 1;
+          }
+
+          }
+          return row;
+        });
+        setStationArray(updatedStationArray);
+    }
+
     updateExecutionStart(additionStationArray, setAdditionStationArray, 'Addition Station');
     updateExecutionStart(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
     updateExecutionStart(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
     updateExecutionStartLoad(loadBufferArray, setLoadBufferArray, 'Load Buffer');
-    // updateExecutionStartLoad(storeBufferArray, setStoreBufferArray, 'Store Buffer');
+    updateExecutionStartStore(storeBufferArray, setStoreBufferArray, 'Store Buffer');
     
   };
   
