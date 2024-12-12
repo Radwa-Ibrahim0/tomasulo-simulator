@@ -41,7 +41,9 @@ export default function SimulationPage({ everything }) {
   useEffect(() => {
     // Initialize instructions and other states from 'everything'
     const initialInstructions = everything.filter(item => item.type === 'instruction');
+    console.log(initialInstructions); // Log instructions before initialization 
     const splitInstructions = preprocessInstructions(initialInstructions);
+    console.log(splitInstructions); // Log instructions after initialization
     setInstructions(splitInstructions);
     setOriginalInstructions(splitInstructions);
     setShownInstructions(splitInstructions.slice(0, 1)); // Set the first instruction initially
@@ -185,6 +187,7 @@ export default function SimulationPage({ everything }) {
   const incrementCycle = () => {
     setCycle(cycle + 1);
     if(cycle > 0){
+    writeback();
     execute(); 
       const lastInstruction = shownInstructions[shownInstructions.length - 1];
       const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction?.instruction);
@@ -539,7 +542,7 @@ export default function SimulationPage({ everything }) {
             instruction.executionStart = cycle;
             setShownInstructions([...shownInstructions]);
           }
-          if(row.latency===0 )
+          if(row.latency===0)
             instruction.executionEnd=cycle; 
           row.latency -= 1;
         }
@@ -560,6 +563,9 @@ export default function SimulationPage({ everything }) {
               setFirstTimeCache(true);
               setloadid(row.id);
 
+            }
+            else{
+              row.latency += hitRate;
             }
           }
           if(row.latency === 1 && loadid===row.id  ){
@@ -598,6 +604,9 @@ export default function SimulationPage({ everything }) {
                 setloadid(row.id);
   
               }
+              else{
+                row.latency += hitRate;
+              }
             }
             if(row.latency === 1 && loadid===row.id  ){
               checkCache(parseInt(row.address), blockSize);
@@ -631,6 +640,84 @@ export default function SimulationPage({ everything }) {
     
   };
   
+  const writeback = () => {
+  const processWriteback = (stationArray, setStationArray, stationName) => {
+    const updatedStationArray = stationArray.map(row => {
+      if (row.busy === 1 && row.latency === -1) {
+        let result;
+        if (stationName === 'Addition Station') {
+          if (row.op.startsWith('ADD')) {
+            result = parseFloat(row.vj) + parseFloat(row.vk);
+          } else if (row.op.startsWith('SUB')) {
+            result = parseFloat(row.vj) - parseFloat(row.vk);
+          }
+        }
+        // Similar logic for other station types...
+
+        console.log(`${stationName} result:`, result);
+
+        // Directly update the register files
+        const updateRegisterFile = (registerArray, setRegisterArray) => {
+          const updatedArray = [...registerArray];
+          for (let i = 0; i < updatedArray.length; i++) {
+            if (updatedArray[i].value === row.id) {
+              console.log(`Updating register ${updatedArray[i].index} with value ${result}`);
+              updatedArray[i].value = result;
+            }
+          }
+          setRegisterArray(updatedArray);
+        };
+
+        updateRegisterFile(integerRegistersArray, setIntegerRegistersArray);
+        updateRegisterFile(floatRegistersArray, setFloatRegistersArray);
+
+        // Loop over all reservation station rows to update Vj or Vk
+        const updateReservationStations = (stations) => {
+          stations.forEach(station => {
+            station.forEach(stationRow => {
+              if (stationRow.qj === row.id) {
+                stationRow.vj = result;
+                stationRow.qj = '';
+              }
+              if (stationRow.qk === row.id) {
+                stationRow.vk = result;
+                stationRow.qk = '';
+              }
+              if (station === storeBufferArray && stationRow.q === row.id) {
+                stationRow.v = result;
+                stationRow.q = '';
+              }
+            });
+          });
+        };
+
+        updateReservationStations([additionStationArray, multiplicationStationArray, branchBufferArray, loadBufferArray, storeBufferArray]);
+
+        // Mark the row as not busy
+        row.busy = 0;
+        row.op = '';
+        row.vj = '';
+        row.vk = '';
+        row.qj = '';
+        row.qk = '';
+        row.latency = '';
+        row.instructionId = '';        
+      }
+      return row;
+    });
+    setStationArray(updatedStationArray);
+  };
+
+  processWriteback(additionStationArray, setAdditionStationArray, 'Addition Station');
+  processWriteback(multiplicationStationArray, setMultiplicationStationArray, 'Multiplication Station');
+  processWriteback(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
+  processWriteback(loadBufferArray, setLoadBufferArray, 'Load Buffer');
+  processWriteback(storeBufferArray, setStoreBufferArray, 'Store Buffer');
+
+  console.log('Updated Integer Registers:', integerRegistersArray);
+  console.log('Updated Float Registers:', floatRegistersArray);
+};
+
   return (
     <div className="container mx-auto p-4 space-y-8">
       <h1 className="text-2xl font-bold">MIPS Simulation</h1>
