@@ -36,7 +36,10 @@ export default function SimulationPage({ everything }) {
   const [firstTimeCache, setFirstTimeCache] = useState(false);
   const [firstloadend, setfirstloadend] = useState(false);
   const [loadid,setloadid]=useState(0);
-  const skipAddition = useRef(false);
+  const skip = useRef(false);
+  // const skipMultiplication= useRef(false);
+  // const skipLoad = useRef(false);
+  // const skipStore = useRef(false);
   
 
   useEffect(() => {
@@ -191,21 +194,43 @@ export default function SimulationPage({ everything }) {
     if (cycle > 0) {
 
       const allBusyAddition = additionStationArray.every(item => item.busy === 1); 
+      const allBusyMultiplication = multiplicationStationArray.every(item => item.busy === 1); 
+      const allBusyLoad = loadBufferArray.every(item => item.busy === 1); 
+      const allBusyStore = storeBufferArray.every(item => item.busy === 1); 
       // && multiplicationStationArray.every(item => item.busy === 1) && loadBufferArray.every(item => item.busy === 1)
       let isAdditionInstruction;
       if((instructions[shownInstructions.length]))
         isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
       else 
         isAdditionInstruction = false;
-      console.log(isAdditionInstruction);
 
-      if (allBusyAddition && isAdditionInstruction)  {
-        skipAddition.current=true;
+      let isMultiplicationInstruction;
+      if((instructions[shownInstructions.length]))
+        isMultiplicationInstruction =['MUL.D', 'DIV.D','MUL.S','DIV.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+      else 
+      isMultiplicationInstruction = false;
+
+      let isLoadInstruction;
+      if((instructions[shownInstructions.length]))
+        isLoadInstruction = ['LD', 'LW', 'L.D', 'L.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+      else 
+      isLoadInstruction = false;
+
+      let isStoreInstruction;
+      if((instructions[shownInstructions.length]))
+        isStoreInstruction = ['SD', 'SW', 'S.D', 'S.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+      else 
+      isStoreInstruction = false;
+
+
+
+      if ((allBusyAddition && isAdditionInstruction) || (allBusyMultiplication && isMultiplicationInstruction) || (allBusyLoad && isLoadInstruction) || (allBusyStore && isStoreInstruction))  {
+        skip.current=true;
       }
       writeback();
       execute();
-      if (skipAddition.current===true) {
-        skipAddition.current=false;
+      if (skip.current===true) {
+        skip.current=false;
         return;
       }
       issue();
@@ -771,7 +796,7 @@ export default function SimulationPage({ everything }) {
 
         const allBusyAddition = additionStationArray.every(item => item.busy === 1);
         // if (allBusyAddition) 
-        //   skipAddition.current=true;
+        //   skip.current=true;
         // console.log(allBusy);
         // console.log(skip);
         row.busy = 0;
