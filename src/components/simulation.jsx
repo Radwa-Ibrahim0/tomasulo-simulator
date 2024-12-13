@@ -36,10 +36,7 @@ export default function SimulationPage({ everything }) {
   const [firstTimeCache, setFirstTimeCache] = useState(false);
   const [firstloadend, setfirstloadend] = useState(false);
   const [loadid,setloadid]=useState(0);
-  const skip = useRef(false);
-  // const skipMultiplication= useRef(false);
-  // const skipLoad = useRef(false);
-  // const skipStore = useRef(false);
+  const skipAddition = useRef(false);
   
 
   useEffect(() => {
@@ -194,44 +191,15 @@ export default function SimulationPage({ everything }) {
     if (cycle > 0) {
 
       const allBusyAddition = additionStationArray.every(item => item.busy === 1); 
-      const allBusyMultiplication = multiplicationStationArray.every(item => item.busy === 1); 
-      const allBusyLoad = loadBufferArray.every(item => item.busy === 1); 
-      const allBusyStore = storeBufferArray.every(item => item.busy === 1); 
       // && multiplicationStationArray.every(item => item.busy === 1) && loadBufferArray.every(item => item.busy === 1)
-      let isAdditionInstruction;
-      if((instructions[shownInstructions.length]))
-        isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
-      else 
-        isAdditionInstruction = false;
-
-      let isMultiplicationInstruction;
-      if((instructions[shownInstructions.length]))
-        isMultiplicationInstruction =['MUL.D', 'DIV.D','MUL.S','DIV.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
-      else 
-      isMultiplicationInstruction = false;
-
-      let isLoadInstruction;
-      if((instructions[shownInstructions.length]))
-        isLoadInstruction = ['LD', 'LW', 'L.D', 'L.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
-      else 
-      isLoadInstruction = false;
-
-      let isStoreInstruction;
-      if((instructions[shownInstructions.length]))
-        isStoreInstruction = ['SD', 'SW', 'S.D', 'S.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
-      else 
-      isStoreInstruction = false;
-
-
-
-      if ((allBusyAddition && isAdditionInstruction) || (allBusyMultiplication && isMultiplicationInstruction) || (allBusyLoad && isLoadInstruction) || (allBusyStore && isStoreInstruction))  {
-        skip.current=true;
-      }
+      if (allBusyAddition) 
+        skipAddition.current=true;
 
       writeback();
       execute();
-      if (skip.current===true) {
-        skip.current=false;
+      if (skipAddition.current===true) {
+        
+        skipAddition.current=false;
         return;
       }
       issue();
@@ -721,8 +689,8 @@ export default function SimulationPage({ everything }) {
   const processWriteback = (stationArray, setStationArray, stationName) => {
     const updatedStationArray = stationArray.map(row => {
       if (writebackDone) return row; // Skip further processing if writeback is done
-    console.log((shownInstructions.find(row.instructionId)).endExecution);
-      if (row.busy === 1 && row.latency <= -1 && (shownInstructions.find(id  row.instructionId)).endExecution != cycle) {
+
+      if (row.busy === 1 && row.latency <= -1) {
         let result;
         if (stationName === 'Addition Station') {
           if (row.op.startsWith('ADD') || row.op.startsWith('DADD')) {
@@ -797,7 +765,7 @@ export default function SimulationPage({ everything }) {
 
         const allBusyAddition = additionStationArray.every(item => item.busy === 1);
         // if (allBusyAddition) 
-        //   skip.current=true;
+        //   skipAddition.current=true;
         // console.log(allBusy);
         // console.log(skip);
         row.busy = 0;
@@ -875,10 +843,3 @@ export default function SimulationPage({ everything }) {
 
   );
 }
-DADDI R1, R2, 30
-DADDI R4, R1, 150
-DADDI R7, R4, 50
-DADDI R12, R7, 100
-MUL.D F11, F12, F13
-MUL.D F1, F2, F3
-MUL.D F7, F1, F3
