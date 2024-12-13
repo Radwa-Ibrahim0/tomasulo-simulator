@@ -186,15 +186,22 @@ export default function SimulationPage({ everything }) {
 
   const incrementCycle = () => {
     setCycle(cycle + 1);
-    if(cycle > 0){
-    writeback();
-    execute(); 
+    if (cycle > 0) {
+      writeback();
+      execute();
       const lastInstruction = shownInstructions[shownInstructions.length - 1];
       const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction?.instruction);
       if (lastInstruction) {
         if (!(isBranchInstruction && lastInstruction.executionEnd == null && lastInstruction.issue == null)) {
-          // if (!(instructions.length === shownInstructions.length && shownInstructions[shownInstructions.length - 1]?.issue != null)) {
-      issue();
+          issue();
+        }
+      }
+      // Add the next instruction from the instructions array to shownInstructions
+      if (instructions.length > shownInstructions.length) {
+        const lastShownInstruction = shownInstructions[shownInstructions.length - 1];
+        const isLastBranchInstruction = ['BNE', 'BEQ'].includes(lastShownInstruction?.instruction);
+        if (!isLastBranchInstruction || (isLastBranchInstruction && lastShownInstruction.writeResult !== '')) {
+          setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
         }
       }
     }
@@ -362,11 +369,6 @@ export default function SimulationPage({ everything }) {
           index === shownInstructions.length - 1 ? { ...instr, issue: cycle } : instr
         );
         setShownInstructions(updatedInstructions);
-
-        // Add a new instruction from the instructions array to shownInstructions
-        if (instructions.length > shownInstructions.length && !isBranchInstruction) {
-          setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
-        }
       }
     } else if (isMultiplicationInstruction) {
       const availableRow = multiplicationStationArray.find(row => row.busy === 0);
@@ -416,11 +418,6 @@ export default function SimulationPage({ everything }) {
           index === shownInstructions.length - 1 ? { ...instr, issue: cycle } : instr
         );
         setShownInstructions(updatedInstructions);
-
-        // Add a new instruction from the instructions array to shownInstructions
-        if (instructions.length > shownInstructions.length && !isBranchInstruction) {
-          setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
-        }
       }
     } else if (isLoadInstruction) {
       const availableRow = loadBufferArray.find(row => row.busy === 0);
@@ -447,11 +444,6 @@ export default function SimulationPage({ everything }) {
           index === shownInstructions.length - 1 ? { ...instr, issue: cycle } : instr
         );
         setShownInstructions(updatedInstructions);
-
-        // Add a new instruction from the instructions array to shownInstructions
-        if (instructions.length > shownInstructions.length && !isBranchInstruction) {
-          setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
-        }
       }
     } else if (isStoreInstruction) {
       const availableRow = storeBufferArray.find(row => row.busy === 0);
@@ -487,14 +479,10 @@ export default function SimulationPage({ everything }) {
           index === shownInstructions.length - 1 ? { ...instr, issue: cycle } : instr
         );
         setShownInstructions(updatedInstructions);
-
-        // Add a new instruction from the instructions array to shownInstructions
-        if (instructions.length > shownInstructions.length && !isBranchInstruction) {
-          setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
-        }
       }
     } else if (isBranchInstruction) {
       const availableRow = branchBufferArray.find(row => row.busy === 0);
+      console.log("hereeeeeee");
       if (availableRow) {
         availableRow.busy = 1;
         availableRow.op = lastInstruction.instruction;
@@ -535,7 +523,9 @@ export default function SimulationPage({ everything }) {
         setShownInstructions(updatedInstructions);
 
         // Add a new instruction from the instructions array to shownInstructions
-        if (instructions.length > shownInstructions.length && !isBranchInstruction) {
+
+        if (instructions.length > shownInstructions.length) {
+
           setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
         }
       }
@@ -660,7 +650,7 @@ export default function SimulationPage({ everything }) {
         if (stationName === 'Addition Station') {
           if (row.op.startsWith('ADD') || row.op.startsWith('DADD')) {
             result = parseFloat(row.vj) + parseFloat(row.vk);
-          } else if (row.op.startsWith('SUB') || row.op.startsWith('DSUB')){
+          } else if (row.op.startsWith('SUB') || row.op.startsWith('DSUB')) {
             result = parseFloat(row.vj) - parseFloat(row.vk);
           }
         }
@@ -729,6 +719,34 @@ export default function SimulationPage({ everything }) {
         const instructionToUpdate = shownInstructions.find(instr => instr.id === row.instructionId);
         if (instructionToUpdate) {
           instructionToUpdate.writeResult = cycle;
+
+          // Check for loop simulation
+          if (['BNE', 'BEQ'].includes(instructionToUpdate.instruction)) {
+            const loopLabel = instructionToUpdate.dest;
+            const loopStartIndex = instructions.findIndex(instr => instr.label === loopLabel);
+            const loopEndIndex = instructions.findIndex(instr => instr.id === instructionToUpdate.id);
+
+            if (loopStartIndex !== -1 && loopEndIndex !== -1) {
+              const loopInstructions = instructions.slice(loopStartIndex, loopEndIndex + 1).map(instr => ({
+                ...instr,
+                issue: '',
+                executionStart: '',
+                executionEnd: '',
+                writeResult: ''
+              }));
+
+              if ((instructionToUpdate.instruction === 'BNE' && row.vj !== row.vk) ||
+                  (instructionToUpdate.instruction === 'BEQ' && row.vj === row.vk)) {
+                const updatedInstructions = [
+                  ...instructions.slice(0, loopEndIndex + 1),
+                  ...loopInstructions,
+                  ...instructions.slice(loopEndIndex + 1)
+                ];
+                console.log("updatedddddddddddd",updatedInstructions);
+                setInstructions(updatedInstructions);
+              }
+            }
+          }
         }
 
         writebackDone = true; // Set flag to true after one writeback
