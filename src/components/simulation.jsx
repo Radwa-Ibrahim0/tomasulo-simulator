@@ -189,18 +189,15 @@ export default function SimulationPage({ everything }) {
     if (cycle > 0) {
       writeback();
       execute();
-      const lastInstruction = shownInstructions[shownInstructions.length - 1];
-      const isBranchInstruction = ['BNE', 'BEQ'].includes(lastInstruction?.instruction);
-      if (lastInstruction) {
-        if (!(isBranchInstruction && lastInstruction.executionEnd == null && lastInstruction.issue == null)) {
-          issue();
-        }
-      }
+      issue();
+
       // Add the next instruction from the instructions array to shownInstructions
       if (instructions.length > shownInstructions.length) {
         const lastShownInstruction = shownInstructions[shownInstructions.length - 1];
         const isLastBranchInstruction = ['BNE', 'BEQ'].includes(lastShownInstruction?.instruction);
-        if (!isLastBranchInstruction || (isLastBranchInstruction && lastShownInstruction.writeResult !== '')) {
+        if (!isLastBranchInstruction || (isLastBranchInstruction && lastShownInstruction.executionEnd !== '')) {
+          console.log("instruction array",instructions);
+          console.log("instruction shown",shownInstructions);
           setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
         }
       }
@@ -523,13 +520,12 @@ export default function SimulationPage({ everything }) {
         setShownInstructions(updatedInstructions);
 
         // Add a new instruction from the instructions array to shownInstructions
-
-        if (instructions.length > shownInstructions.length) {
-
-          setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
-        }
-      }
+          // if (instructions.length > shownInstructions.length) {
+          //   setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
+          // }
+        
     }
+  }
     
   };
 
@@ -545,6 +541,40 @@ export default function SimulationPage({ everything }) {
           if(row.latency===0)
             instruction.executionEnd=cycle; 
           row.latency -= 1;
+          const instructionToUpdate = shownInstructions.find(instr => instr.id === row.instructionId);
+          // Check for loop simulation
+          if (['BNE', 'BEQ'].includes(instructionToUpdate.instruction)) {
+            const loopLabel = instructionToUpdate.dest;
+            const loopStartIndex = instructions.findIndex(instr => instr.label === loopLabel);
+            const loopEndIndex = instructions.findIndex(instr => instr.id === instructionToUpdate.id);
+
+            if (loopStartIndex !== -1 && loopEndIndex !== -1) {
+              const loopInstructions = instructions.slice(loopStartIndex, loopEndIndex + 1).map((instr, index) => ({
+                ...instr,
+                id: `I${instructions.length + index + 1}`, // Assign a new unique ID
+                issue: '',
+                executionStart: '',
+                executionEnd: '',
+                writeResult: ''
+              }));
+
+              if ((instructionToUpdate.instruction === 'BNE' && row.vj !== row.vk) ||
+                  (instructionToUpdate.instruction === 'BEQ' && row.vj === row.vk)) {
+                const updatedInstructions = [
+                  ...instructions.slice(0, loopEndIndex + 1),
+                  ...loopInstructions,
+                  ...instructions.slice(loopEndIndex + 1)
+                ];
+                      // Remove the last line from shownInstructions
+                // if (shownInstructions.length > 1) {
+                //   setShownInstructions(prev => prev.slice(0, -1));
+                // }
+                console.log("updatedddddddddddd",updatedInstructions);
+                setInstructions(updatedInstructions);
+              }
+            }
+          }
+        
         }
         return row;
       });
@@ -570,7 +600,9 @@ export default function SimulationPage({ everything }) {
             setfirstloadend(true);
           }
           if(row.latency===0 && firstloadend ){
-            instruction.executionEnd=cycle;        
+            instruction.executionEnd=cycle;  
+          // if instruction is BEQ i want to check if the values of vj and vk are equal or not  
+
           }
           if (firstloadend && instruction.executionStart===''){
            console.log("executio start awel ", row.latency, instruction);
@@ -666,24 +698,20 @@ export default function SimulationPage({ everything }) {
         if (stationName === 'Load Buffer') {
           const cacheBlock = cacheArray.find(block => block.blockNumber === 'B1');
           const cacheRow = cacheBlock.addresses.find(address => address.address === parseInt(row.address));
-          result = cacheRow.value;
+          result = cacheRow.value || 0;
         }
 
         if (stationName === 'Store Buffer') {
           const cacheBlock = cacheArray.find(block => block.blockNumber === 'B1');
           const cacheRow = cacheBlock.addresses.find(address => address.address === parseInt(row.address));
           cacheRow.value = row.v;
-          // console.log('Cache Block:', cacheBlock);
         }
-
-        // console.log(`${stationName} result:`, result);
 
         // Directly update the register files
         const updateRegisterFile = (registerArray, setRegisterArray) => {
           const updatedArray = [...registerArray];
           for (let i = 0; i < updatedArray.length; i++) {
             if (updatedArray[i].value === row.id) {
-              // console.log(`Updating register ${updatedArray[i].index} with value ${result}`);
               updatedArray[i].value = result;
             }
           }
@@ -717,45 +745,16 @@ export default function SimulationPage({ everything }) {
 
         // Directly update the writeResult field of the shownInstructions array
         const instructionToUpdate = shownInstructions.find(instr => instr.id === row.instructionId);
-        if (instructionToUpdate) {
+        if (instructionToUpdate && !['BEQ', 'BNE'].includes(instructionToUpdate.instruction)) {
           instructionToUpdate.writeResult = cycle;
-
-          // Check for loop simulation
-          if (['BNE', 'BEQ'].includes(instructionToUpdate.instruction)) {
-            const loopLabel = instructionToUpdate.dest;
-            const loopStartIndex = instructions.findIndex(instr => instr.label === loopLabel);
-            const loopEndIndex = instructions.findIndex(instr => instr.id === instructionToUpdate.id);
-
-            if (loopStartIndex !== -1 && loopEndIndex !== -1) {
-              const loopInstructions = instructions.slice(loopStartIndex, loopEndIndex + 1).map(instr => ({
-                ...instr,
-                issue: '',
-                executionStart: '',
-                executionEnd: '',
-                writeResult: ''
-              }));
-
-              if ((instructionToUpdate.instruction === 'BNE' && row.vj !== row.vk) ||
-                  (instructionToUpdate.instruction === 'BEQ' && row.vj === row.vk)) {
-                const updatedInstructions = [
-                  ...instructions.slice(0, loopEndIndex + 1),
-                  ...loopInstructions,
-                  ...instructions.slice(loopEndIndex + 1)
-                ];
-                console.log("updatedddddddddddd",updatedInstructions);
-                setInstructions(updatedInstructions);
-              }
-            }
-          }
+          writebackDone = true;
         }
-
-        writebackDone = true; // Set flag to true after one writeback
 
         row.busy = 0;
         row.op = '';
-        row.v='';
-        row.q='';
-        row.address='';
+        row.v = '';
+        row.q = '';
+        row.address = '';
         row.vj = '';
         row.vk = '';
         row.qj = '';
@@ -773,9 +772,6 @@ export default function SimulationPage({ everything }) {
   if (!writebackDone) processWriteback(branchBufferArray, setBranchBufferArray, 'Branch Buffer');
   if (!writebackDone) processWriteback(loadBufferArray, setLoadBufferArray, 'Load Buffer');
   if (!writebackDone) processWriteback(storeBufferArray, setStoreBufferArray, 'Store Buffer');
-
-  // console.log('Updated Integer Registers:', integerRegistersArray);
-  // console.log('Updated Float Registers:', floatRegistersArray);
 };
 
   return (

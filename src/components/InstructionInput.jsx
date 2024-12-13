@@ -119,7 +119,20 @@ const InstructionInput = ({ everything, setEverything }) => {
               content: instructionPart.trim()
             };
           });
-        setEverything(prev => [...prev, ...instructions]);
+
+        let loopLabel = '';
+        const updatedInstructions = instructions.map(instruction => {
+          if (instruction.label) {
+            loopLabel = instruction.label;
+          }
+          if (['BEQ', 'BNE'].includes(instruction.content.split(' ')[0]) && loopLabel) {
+            instruction.label = loopLabel;
+            loopLabel = '';
+          }
+          return instruction;
+        });
+
+        setEverything(prev => [...prev, ...updatedInstructions]);
       };
       reader.readAsText(file);
     }
@@ -128,8 +141,11 @@ const InstructionInput = ({ everything, setEverything }) => {
   const handleAddInstruction = () => {
     if (currentInstruction.operation) {
       let content = '';
+      let loopLabel = '';
+
       if (currentInstruction.label) {
         content += `${currentInstruction.label}: `;
+        loopLabel = currentInstruction.label;
         setLabels(prev => [...prev, currentInstruction.label]);
       }
       content += currentInstruction.operation;
@@ -148,7 +164,22 @@ const InstructionInput = ({ everything, setEverything }) => {
         type: 'instruction',
         content: content.trim()
       };
-      setEverything(prev => [...prev, instruction]);
+
+      setEverything(prev => {
+        const newEverything = [...prev, instruction];
+
+        if (loopLabel) {
+          for (let i = newEverything.length - 1; i >= 0; i--) {
+            if (['BEQ', 'BNE'].includes(newEverything[i].content.split(' ')[0])) {
+              newEverything[i].label = loopLabel;
+              break;
+            }
+          }
+        }
+
+        return newEverything;
+      });
+
       setCurrentInstruction({
         operation: '',
         registers: ['', '', ''],
@@ -428,7 +459,7 @@ const InstructionInput = ({ everything, setEverything }) => {
                           />
                         </div>
                       </>
-                    ) : ['LW', 'LD', 'SW', 'SD'].includes(currentInstruction.operation) ? (
+                    ) : ['LW', 'LD', 'SW', 'SD', 'L.S', 'S.S'].includes(currentInstruction.operation) ? (
                       <>
                         <div>
                           <Label>Register 1</Label>
@@ -466,7 +497,7 @@ const InstructionInput = ({ everything, setEverything }) => {
                           />
                         </div>
                       </>
-                    ) : ['L.S', 'L.D', 'S.S', 'S.D'].includes(currentInstruction.operation) ? (
+                    ) : ['L.D', 'S.D'].includes(currentInstruction.operation) ? (
                       <>
                         <div>
                           <Label>Register 1</Label>
@@ -493,7 +524,8 @@ const InstructionInput = ({ everything, setEverything }) => {
                         <div>
                           <Label>Address</Label>
                           <Input
-                                        value={currentInstruction.immediate}
+                            type="number"
+                            value={currentInstruction.immediate}
                             onChange={(e) => setCurrentInstruction(prev => ({
                               ...prev,
                               immediate: e.target.value
