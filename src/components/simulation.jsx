@@ -189,12 +189,36 @@ export default function SimulationPage({ everything }) {
 
     setCycle(cycle + 1);
     if (cycle > 0) {
+      let isAdditionInstruction;
+      if((instructions[shownInstructions.length - 1]))
+        isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+      else 
+        isAdditionInstruction = false;
+        let isMultiplicationInstruction;
+        if((instructions[shownInstructions.length - 1]))
+          isMultiplicationInstruction =['MUL.D', 'DIV.D','MUL.S','DIV.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+        else 
+        isMultiplicationInstruction = false;
+  
+        let isLoadInstruction;
+        if((instructions[shownInstructions.length- 1]))
+          isLoadInstruction = ['LD', 'LW', 'L.D', 'L.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+        else 
+        isLoadInstruction = false;
+  
+        let isStoreInstruction;
+        if((instructions[shownInstructions.length -1]))
+          isStoreInstruction = ['SD', 'SW', 'S.D', 'S.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+        else 
+        isStoreInstruction = false;
 
       const allBusyAddition = additionStationArray.every(item => item.busy === 1); 
-      // && multiplicationStationArray.every(item => item.busy === 1) && loadBufferArray.every(item => item.busy === 1)
-      if (allBusyAddition) 
+      const allBusyMultiplication = multiplicationStationArray.every(item => item.busy === 1); 
+      const allBusyLoad = loadBufferArray.every(item => item.busy === 1); 
+      const allBusyStore = storeBufferArray.every(item => item.busy === 1); 
+      if ((allBusyAddition && isAdditionInstruction) || (allBusyMultiplication && isMultiplicationInstruction) || (allBusyLoad && isLoadInstruction) || (allBusyStore && isStoreInstruction))  {
         skipAddition.current=true;
-
+      }
       writeback();
       execute();
       if (skipAddition.current===true) {
