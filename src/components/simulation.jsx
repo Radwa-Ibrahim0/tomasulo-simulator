@@ -875,3 +875,10 @@ export default function SimulationPage({ everything }) {
 
   );
 }
+DADDI R1, R2, 30
+DADDI R4, R1, 150
+DADDI R7, R4, 50
+DADDI R12, R7, 100
+MUL.D F11, F12, F13
+MUL.D F1, F2, F3
+MUL.D F7, F1, F3
