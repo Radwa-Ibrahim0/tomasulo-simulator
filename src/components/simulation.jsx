@@ -310,6 +310,14 @@ export default function SimulationPage({ everything }) {
 
   const issue = () => {
     const lastInstruction = shownInstructions[shownInstructions.length - 1];
+    const skipCycleAddition = additionStationArray.find(row => row.busy === 1 && row.op === '');
+     if(skipCycleAddition){ 
+      // set row.busy = 0 in the addition array
+      skipCycleAddition.busy = 0;
+      setAdditionStationArray([...additionStationArray]);
+      return;
+     }
+    
     if (!lastInstruction || lastInstruction.issue) return; // Check if the instruction already has an issue value
 
     const isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(lastInstruction.instruction);
@@ -750,7 +758,7 @@ export default function SimulationPage({ everything }) {
           writebackDone = true;
         }
 
-        row.busy = 0;
+        row.busy = 1;
         row.op = '';
         row.v = '';
         row.q = '';
