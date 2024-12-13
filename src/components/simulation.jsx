@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import RegisterFile from './RegisterFile';
 import ReservationStations from './ReservationStations';
 import BufferTable from './StoreLoadBuffer';
@@ -36,7 +36,7 @@ export default function SimulationPage({ everything }) {
   const [firstTimeCache, setFirstTimeCache] = useState(false);
   const [firstloadend, setfirstloadend] = useState(false);
   const [loadid,setloadid]=useState(0);
-  const [skipCycle, setSkipCycle] = useState(false)
+  const skipAddition = useRef(false);
   
 
   useEffect(() => {
@@ -186,24 +186,36 @@ export default function SimulationPage({ everything }) {
   };
 
   const incrementCycle = () => {
+
     setCycle(cycle + 1);
     if (cycle > 0) {
+
+      const allBusyAddition = additionStationArray.every(item => item.busy === 1); 
+      // && multiplicationStationArray.every(item => item.busy === 1) && loadBufferArray.every(item => item.busy === 1)
+      let isAdditionInstruction;
+      if((instructions[shownInstructions.length]))
+        isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(JSON.stringify((instructions[shownInstructions.length -1]).instruction).trim().replace(/['"]+/g, ''));
+      else 
+        isAdditionInstruction = false;
+      console.log(isAdditionInstruction);
+
+      if (allBusyAddition && isAdditionInstruction)  {
+        skipAddition.current=true;
+      }
       writeback();
       execute();
+      if (skipAddition.current===true) {
+        skipAddition.current=false;
+        return;
+      }
       issue();
-
-      const emptyOpRows = additionStationArray.filter(row => row.busy === 1 && row.op === '');
-      const nonEmptyOpRows = additionStationArray.filter(row => row.busy === 1 && row.op !== '');
-      
-      if (emptyOpRows.length === 1 && nonEmptyOpRows.length > 0) {
-        emptyOpRows[0].busy = 0;
-        console.log("hiiiiiiiiiiiiii");
-      } else if (instructions.length > shownInstructions.length) {
+      // Add the next instruction from the instructions array to shownInstructions
+      if (instructions.length > shownInstructions.length) {
         const lastShownInstruction = shownInstructions[shownInstructions.length - 1];
         const isLastBranchInstruction = ['BNE', 'BEQ'].includes(lastShownInstruction?.instruction);
         if (!isLastBranchInstruction || (isLastBranchInstruction && lastShownInstruction.executionEnd !== '')) {
-          console.log("instruction array", instructions);
-          console.log("instruction shown", shownInstructions);
+          console.log("instruction array",instructions);
+          console.log("instruction shown",shownInstructions);
           setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
         }
       }
@@ -316,6 +328,7 @@ export default function SimulationPage({ everything }) {
 
   const issue = () => {
     const lastInstruction = shownInstructions[shownInstructions.length - 1];
+    
     if (!lastInstruction || lastInstruction.issue) return; // Check if the instruction already has an issue value
 
     const isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(lastInstruction.instruction);
@@ -756,7 +769,12 @@ export default function SimulationPage({ everything }) {
           writebackDone = true;
         }
 
-        // row.busy = 1;
+        const allBusyAddition = additionStationArray.every(item => item.busy === 1);
+        // if (allBusyAddition) 
+        //   skipAddition.current=true;
+        // console.log(allBusy);
+        // console.log(skip);
+        row.busy = 0;
         row.op = '';
         row.v = '';
         row.q = '';
@@ -831,4 +849,3 @@ export default function SimulationPage({ everything }) {
 
   );
 }
-
