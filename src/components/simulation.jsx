@@ -775,55 +775,54 @@ export default function SimulationPage({ everything }) {
 };
 
   return (
-    <div className="container mx-auto p-4 space-y-8">
-      <h1 className="text-2xl font-bold">MIPS Simulation</h1>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-        <div className="md:col-span-1">
-            <InstructionStatusTable instructions={shownInstructions} />
+    <div className="container mx-auto p-1 text-xs">
+  <h1 className="text-lg font-bold mb-1">MIPS Simulation</h1>
+  <div className="grid grid-cols-6 gap-4"> {/* Removed fixed height */}
+    <div className="col-span-4 grid grid-rows-auto gap-1"> {/* Rows adjust dynamically */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="col-span-2">
+          <InstructionStatusTable instructions={shownInstructions} />
         </div>
-        <div className="md:col-span-1 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
           <Cache cacheArray={cacheArray} />
+        </div>
+        <div>
           <Memory memoryArray={memoryArray} />
         </div>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-4">
-          <ReservationStations title="Addition Reservation Station" size={addStation} rows={additionStationArray} />
-          <ReservationStations title="Multiplication Reservation Station" size={mulStation} rows={multiplicationStationArray} />
-          <ReservationStations title="Branch Reservation Station" size={branchBuffer} rows={branchBufferArray} />
-          <BufferTable title="Load Buffer" size={loadBuffer} rows={loadBufferArray} showVQ={false} />
-          <BufferTable title="Store Buffer" size={storeBuffer} rows={storeBufferArray} />
-        </div>
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <RegisterFile title="Integer Registers" registers={integerRegistersArray} />
-            <RegisterFile title="Floating Point Registers" registers={floatRegistersArray} />
-          </div>
-        </div>
+      <div className="mt-4 grid grid-cols-3 gap-4">
+        <ReservationStations title="Addition RS" size={addStation} rows={additionStationArray} />
+        <ReservationStations title="Multiplication RS" size={mulStation} rows={multiplicationStationArray} />
+        <ReservationStations title="Branch RS" size={branchBuffer} rows={branchBufferArray} />
       </div>
-      <div className="fixed bottom-4 right-4 bg-white border rounded-lg shadow-lg p-4">
-        <div className="text-2xl font-mono">
-          Clock: <span className="font-bold">{cycle}</span>
-        </div>
-        <button 
-          style={{
-            backgroundColor: 'blue', 
-            color: 'white', 
-            padding: '12px 24px', 
-            border: 'none', 
-            borderRadius: '5px', 
-            cursor: 'pointer',
-            fontSize: '1rem',
-            transition: 'background-color 0.3s ease'
-          }} 
-          onClick={incrementCycle}
-          onMouseOver={(e) => e.target.style.backgroundColor = '#0056b3'}
-          onMouseOut={(e) => e.target.style.backgroundColor = 'blue'}
-        >
-          Next Cycle
-        </button>
+      <div className="mt-4 grid grid-cols-2 gap-4">
+        <BufferTable title="Load Buffer" size={loadBuffer} rows={loadBufferArray} showVQ={false} />
+        <BufferTable title="Store Buffer" size={storeBuffer} rows={storeBufferArray} />
       </div>
     </div>
+    <div className="col-span-2 grid grid-cols-2 gap-4">
+      <div>
+        <RegisterFile title="Integer Registers" registers={integerRegistersArray} />
+      </div>
+      <div>
+        <RegisterFile title="FP Registers" registers={floatRegistersArray} />
+      </div>
+    </div>
+  </div>
+  <div className="w-36 h-24 fixed bottom-4 right-4 bg-white border rounded-lg shadow-lg p-2 text-sm flex flex-col justify-center items-center">
+  <div className="font-mono mb-2 text-center">
+    Clock: <span className="font-bold">{cycle}</span>
+  </div>
+  <button 
+    className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded text-sm transition duration-300 ease-in-out"
+    onClick={incrementCycle}
+  >
+    Next Cycle
+  </button>
+</div>
+
+</div>
+
   );
 }
 

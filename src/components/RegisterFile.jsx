@@ -13,23 +13,35 @@ export default function RegisterFileTable({ title, registers }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-medium">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="py-1">
+        <Table className="text-xs table-sm"> {/* Added table-sm class */}
           <TableHeader>
-            <TableRow>
+            <TableRow className="h-4">
               <TableHead>Reg</TableHead>
+              <TableHead>Qi</TableHead>
+              <TableHead className="border-l">Reg</TableHead> {/* Added border-l class */}
               <TableHead>Qi</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {registers.map((register) => (
-              <TableRow key={register.index}>
-                <TableCell>{title.includes('Integer') ? `R${register.index}` : `F${register.index}`}</TableCell>
-                <TableCell>{register.value}</TableCell>
-              </TableRow>
+            {registers.map((register, index) => (
+              index % 2 === 0 && (
+                <>
+                  <TableRow key={register.index} className="h-4 p-1">
+                    <TableCell>{title.includes('Integer') ? `R${register.index}` : `F${register.index}`}</TableCell>
+                    <TableCell>{register.value}</TableCell>
+                    {registers[index + 1] && (
+                      <>
+                        <TableCell className="border-l">{title.includes('Integer') ? `R${registers[index + 1].index}` : `F${registers[index + 1].index}`}</TableCell> {/* Added border-l class */}
+                        <TableCell>{registers[index + 1].value}</TableCell>
+                      </>
+                    )}
+                  </TableRow>
+                </>
+              )
             ))}
           </TableBody>
         </Table>

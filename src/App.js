@@ -29,55 +29,57 @@ function App() {
 
   return (
     <Router>
-      <div className="App" style={{ margin: '0 auto', padding: '20px' }}>
-        {/* Header Section */}
-        <h1 style={{ fontSize: '3rem', textAlign: 'center', marginBottom: '20px' }}>
-          Tomasulo Algorithm Simulator
-        </h1>
-        
-        {/* Buttons Section: Flexbox container for alignment */}
-        <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px', marginBottom: '30px' }}>
-          {/* Display Simulation Button */}
-          {!showSimulation && (
-            <button 
-              style={{
-                backgroundColor: 'black', 
-                color: 'white', 
-                padding: '12px 24px', 
-                border: 'none', 
-                borderRadius: '5px', 
-                cursor: 'pointer',
-                fontSize: '1rem',
-                transition: 'background-color 0.3s ease'
-              }} 
-              onClick={() => setShowSimulation(true)}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#333'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'black'}
-            >
-              Display Simulation
-            </button>
-          )}
+      <div className="App" style={{ margin: '0 auto', padding: '5px' }}>
+        {/* Header Section: Flexbox container for alignment */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center',}}>
+          <h1 style={{ fontSize: '2rem', margin: 0 }}>
+            Tomasulo Algorithm Simulator
+          </h1>
+          
+          {/* Buttons Section */}
+          <div style={{ display: 'flex', gap: '15px' }}>
+            {/* Display Simulation Button */}
+            {!showSimulation && (
+              <button 
+                style={{
+                  backgroundColor: 'black', 
+                  color: 'white', 
+                  padding: '12px 24px', 
+                  border: 'none', 
+                  borderRadius: '5px', 
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  transition: 'background-color 0.3s ease'
+                }} 
+                onClick={() => setShowSimulation(true)}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#333'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'black'}
+              >
+                Display Simulation
+              </button>
+            )}
 
-          {/* Back Button */}
-          {showSimulation && (
-            <button 
-              style={{
-                backgroundColor: 'black', 
-                color: 'white', 
-                padding: '12px 24px', 
-                border: 'none', 
-                borderRadius: '5px', 
-                cursor: 'pointer',
-                fontSize: '1rem',
-                transition: 'background-color 0.3s ease'
-              }} 
-              onClick={() => setShowSimulation(false)}
-              onMouseOver={(e) => e.target.style.backgroundColor = '#333'}
-              onMouseOut={(e) => e.target.style.backgroundColor = 'black'}
-            >
-              Back
-            </button>
-          )}
+            {/* Back Button */}
+            {showSimulation && (
+              <button 
+                style={{
+                  backgroundColor: 'black', 
+                  color: 'white', 
+                  padding: '12px 24px', 
+                  border: 'none', 
+                  borderRadius: '5px', 
+                  cursor: 'pointer',
+                  fontSize: '1rem',
+                  transition: 'background-color 0.3s ease'
+                }} 
+                onClick={() => setShowSimulation(false)}
+                onMouseOver={(e) => e.target.style.backgroundColor = '#333'}
+                onMouseOut={(e) => e.target.style.backgroundColor = 'black'}
+              >
+                Back
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Conditionally render InstructionInput or SimulationPage */}

@@ -1,0 +1,37 @@
+.table-sm {
+  font-size: 0.75rem; /* Adjust the font size as needed */
+}
+
+.border-l {
+  border-left: 1px solid #ccc; /* Adjust the color and width as needed */
+}
+
+/* Custom scrollbar styles */
+.custom-scrollbar {
+    scrollbar-width: thin; /* For Firefox, makes the scrollbar thinner */
+    scrollbar-color: #888 #f1f1f1; /* For Firefox, thumb color and track color */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px; /* Smaller scrollbar width */
+    height: 6px; /* Optional: Smaller horizontal scrollbar */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px; /* Rounded track edges */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 10px; /* Rounded thumb edges */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #555; /* Darker thumb when hovered */
+  }
+  
+  .custom-scrollbar::-webkit-scrollbar-button {
+    display: none; /* Removes the arrows */
+  }
+  

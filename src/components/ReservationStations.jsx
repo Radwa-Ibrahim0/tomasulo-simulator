@@ -23,14 +23,14 @@ export default function ReservationStationTable({ title, size, rows = [] }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-medium">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="py-1 custom-scrollbar" style={{ maxHeight: '300px', overflowY: 'auto' }}> {/* Added custom-scrollbar class */}
+        <Table className="text-xs table-sm"> {/* Added table-sm class */}
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">ID</TableHead>
+            <TableRow className="h-4">
+              <TableHead className="w-12">ID</TableHead>
               <TableHead>Busy</TableHead>
               <TableHead>Op</TableHead>
               <TableHead>Vj</TableHead>
@@ -41,7 +41,7 @@ export default function ReservationStationTable({ title, size, rows = [] }) {
           </TableHeader>
           <TableBody>
             {stations.map((station, index) => (
-              <TableRow key={station.id || index}>
+              <TableRow key={station.id || index} className="h-4 p-1"> {/* Added p-1 class */}
                 <TableCell>{station.id}</TableCell>
                 <TableCell>{station.busy}</TableCell>
                 <TableCell>{station.op}</TableCell>

@@ -19,23 +19,23 @@ export default function BufferTable({ title, size, rows = [], showVQ = true }) {
 
   return (
     <Card>
-      <CardHeader>
-        <CardTitle className="text-sm font-medium">{title}</CardTitle>
+      <CardHeader className="pb-1">
+        <CardTitle className="text-xs font-medium">{title}</CardTitle>
       </CardHeader>
-      <CardContent>
-        <Table>
+      <CardContent className="py-1 custom-scrollbar" style={{ maxHeight: '300px', overflowY: 'auto' }}> {/* Added custom-scrollbar class */}
+        <Table className="text-xs table-sm"> {/* Added table-sm class */}
           <TableHeader>
-            <TableRow>
-              <TableHead className="w-16">ID</TableHead>
+            <TableRow className="h-4">
+              <TableHead className="w-12">ID</TableHead>
               <TableHead>Busy</TableHead>
-              <TableHead>Address</TableHead>
+              <TableHead>Addr</TableHead>
               {showVQ && <TableHead>V</TableHead>}
               {showVQ && <TableHead>Q</TableHead>}
             </TableRow>
           </TableHeader>
           <TableBody>
             {buffers.map((buffer, index) => (
-              <TableRow key={buffer.id || index}>
+              <TableRow key={buffer.id || index} className="h-4 p-1"> {/* Added p-1 class */}
                 <TableCell>{buffer.id}</TableCell>
                 <TableCell>{buffer.busy}</TableCell>
                 <TableCell>{buffer.address}</TableCell>
