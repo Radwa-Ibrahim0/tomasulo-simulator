@@ -219,8 +219,8 @@ export default function SimulationPage({ everything }) {
       if ((allBusyAddition && isAdditionInstruction) || (allBusyMultiplication && isMultiplicationInstruction) || (allBusyLoad && isLoadInstruction) || (allBusyStore && isStoreInstruction))  {
         skipAddition.current=true;
       }
-      writeback();
       execute();
+      writeback();
       if (skipAddition.current===true) {
         
         skipAddition.current=false;
@@ -714,7 +714,7 @@ export default function SimulationPage({ everything }) {
     const updatedStationArray = stationArray.map(row => {
       if (writebackDone) return row; // Skip further processing if writeback is done
 
-      if (row.busy === 1 && row.latency <= -1) {
+      if (row.busy === 1 && row.latency <= -1 && shownInstructions.find(instr => instr.id === row.instructionId)?.executionEnd !== cycle) {
         let result;
         if (stationName === 'Addition Station') {
           if (row.op.startsWith('ADD') || row.op.startsWith('DADD')) {
