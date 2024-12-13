@@ -36,6 +36,7 @@ export default function SimulationPage({ everything }) {
   const [firstTimeCache, setFirstTimeCache] = useState(false);
   const [firstloadend, setfirstloadend] = useState(false);
   const [loadid,setloadid]=useState(0);
+  const [skipCycle, setSkipCycle] = useState(false)
   
 
   useEffect(() => {
@@ -191,13 +192,18 @@ export default function SimulationPage({ everything }) {
       execute();
       issue();
 
-      // Add the next instruction from the instructions array to shownInstructions
-      if (instructions.length > shownInstructions.length) {
+      const emptyOpRows = additionStationArray.filter(row => row.busy === 1 && row.op === '');
+      const nonEmptyOpRows = additionStationArray.filter(row => row.busy === 1 && row.op !== '');
+      
+      if (emptyOpRows.length === 1 && nonEmptyOpRows.length > 0) {
+        emptyOpRows[0].busy = 0;
+        console.log("hiiiiiiiiiiiiii");
+      } else if (instructions.length > shownInstructions.length) {
         const lastShownInstruction = shownInstructions[shownInstructions.length - 1];
         const isLastBranchInstruction = ['BNE', 'BEQ'].includes(lastShownInstruction?.instruction);
         if (!isLastBranchInstruction || (isLastBranchInstruction && lastShownInstruction.executionEnd !== '')) {
-          console.log("instruction array",instructions);
-          console.log("instruction shown",shownInstructions);
+          console.log("instruction array", instructions);
+          console.log("instruction shown", shownInstructions);
           setShownInstructions(prev => [...prev, instructions[shownInstructions.length]]);
         }
       }
@@ -310,14 +316,6 @@ export default function SimulationPage({ everything }) {
 
   const issue = () => {
     const lastInstruction = shownInstructions[shownInstructions.length - 1];
-    const skipCycleAddition = additionStationArray.find(row => row.busy === 1 && row.op === '');
-     if(skipCycleAddition){ 
-      // set row.busy = 0 in the addition array
-      skipCycleAddition.busy = 0;
-      setAdditionStationArray([...additionStationArray]);
-      return;
-     }
-    
     if (!lastInstruction || lastInstruction.issue) return; // Check if the instruction already has an issue value
 
     const isAdditionInstruction = ['DADDI', 'DSUBI', 'ADD.D', 'SUB.D','ADD.S', 'SUB.S'].includes(lastInstruction.instruction);
@@ -758,7 +756,7 @@ export default function SimulationPage({ everything }) {
           writebackDone = true;
         }
 
-        row.busy = 1;
+        // row.busy = 1;
         row.op = '';
         row.v = '';
         row.q = '';
